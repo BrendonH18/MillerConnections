@@ -8,8 +8,9 @@ class CustomUserAdmin(UserAdmin):
     # add_form = CustomUserCreationForm
     # form = CustomUserChangeForm
     # model = CustomUser
+    
     list_display = (
-        'email', 
+        'name', 
         "is_staff", 
         "is_active",
         )
@@ -27,6 +28,8 @@ class CustomUserAdmin(UserAdmin):
                         'wide',
                         ),
                     'fields': (
+                        'first_name',
+                        'last_name',
                         'email', 
                         'username', 
                         'password1', 
@@ -35,6 +38,11 @@ class CustomUserAdmin(UserAdmin):
                 },
             ),
         )
+
+    def name(self, user):
+        return user.get_full_name()
     
+    
+
 
 # admin.site.register(CustomUser, CustomUserAdmin)
