@@ -8,18 +8,33 @@ class CustomUserAdmin(UserAdmin):
     # add_form = CustomUserCreationForm
     # form = CustomUserChangeForm
     # model = CustomUser
-    list_display = ("email", "is_staff", "is_active",)
-    search_fields = ("email",)
-    ordering = ("email",)
+    list_display = (
+        'email', 
+        "is_staff", 
+        "is_active",
+        )
+    search_fields = (
+        'email',
+        )
+    ordering = (
+        "email",
+        )
     add_fieldsets = (
             (
                 None,
                 {
-                    'classes': ('wide',),
-                    'fields': ('email', 'username', 'password1', 'password2'),
+                    'classes': (
+                        'wide',
+                        ),
+                    'fields': (
+                        'email', 
+                        'username', 
+                        'password1', 
+                        'password2'
+                        ),
                 },
             ),
         )
-    pass
+    
 
 # admin.site.register(CustomUser, CustomUserAdmin)
