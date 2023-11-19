@@ -38,6 +38,7 @@ class CustomUserAdmin(UserAdmin):
         }),
         (_('Permissions'), {
             'fields': (
+                'password',
                 'is_active',
                 'is_staff',
                 'is_superuser',
