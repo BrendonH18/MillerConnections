@@ -1,9 +1,8 @@
 from django.contrib import admin
-from django.conf import settings
-# from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model
 from .models import Appointment, Note
 
-# User = get_user_model()
+User = get_user_model()
 
 class NoteInline(admin.TabularInline):
     model = Note
@@ -40,14 +39,14 @@ class NoteInline(admin.TabularInline):
     def has_view_permission(self, request, obj=None):
         if request.user.has_perm('appointments.view_note'):
             return True
-        return super().has_add_permission(request, obj)
+        return super().has_view_permission(request, obj)
 
     def get_extra(self, request, obj=None, **kwargs):
         return 1 if obj else 0  # To avoid adding extra forms on a new object
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "user":
-            kwargs["queryset"] = settings.AUTH_USER_MODEL.objects.filter(pk=request.user.pk)
+            kwargs["queryset"] = User.objects.filter(pk=request.user.pk)
             return super().formfield_for_foreignkey(db_field, request, **kwargs)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
     
