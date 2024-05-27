@@ -1,0 +1,5 @@
+backend-django/.env
+__pycache__/
+backend-django/secrets/
+database-postgres/
+backend-django/db.sqlite3

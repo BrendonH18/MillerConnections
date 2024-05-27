@@ -1,0 +1,75 @@
+services:
+  backend:
+    secrets:
+      - DJANGO_SECRET_KEY
+    environment:
+      - DJANGO_SECRET_KEY=/run/secrets/DJANGO_SECRET_KEY
+    build:
+      context: ./backend-django
+    # command: gunicorn core.wsgi --bind 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    # image: backend:backend
+    container_name: backend
+    command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      - db
+  db:
+    # secrets:
+    #   - POSTGRES_PASSWORD
+    image: postgres
+    restart: always
+    volumes:
+      - ./database-postgres/data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    container_name: db
+  # frontend:
+  #   build:
+  #     context: ./frontend-react/
+  #   volumes:
+  #     - react_build:/react/build
+  # nginx:
+  #   image: nginx:latest
+  #   ports:
+  #     - 80:8080
+  #   volumes:
+  #     - ./nginx/nginx-setup.conf:/etc/nginx/conf.d/default.conf:ro
+  #     - react_build:/var/www/react
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  # db:
+  #   image: postgres
+  #   volumes:
+  #     - ./database-postgres/data/db:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_DB=postgres
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=postgres
+  #   container_name: postgres_db
+#   celery:
+#     restart: always
+#     build:
+#       context: .
+#     command: celery -A core worker -l INFO
+#     volumes:
+#       - .:/backend-django
+#     container_name: celery
+#     depends_on:
+#       - db
+#       - redis
+#       - backend
+#   redis:
+#     image: redis:alpine
+#     container_name: redis
+# volumes:
+#   react_build:
+
+secrets:
+  DJANGO_SECRET_KEY:
+    file: ./backend-django/secrets/DJANGO_SECRET_KEY.txt
+  # POSTGRES_PASSWORD:
+  #   file: ./database-postgres/secrets/POSTGRES_PASSWORD.txt

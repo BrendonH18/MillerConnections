@@ -1,0 +1,36 @@
+{% load i18n admin_urls static %}
+<fieldset class="module aligned {{ inline_admin_formset.classes }}">
+    {% if inline_admin_formset.has_auto_field %}
+        <div class="hidden">
+            {{ inline_admin_formset.forms.0.instance.pk }}
+        </div>
+    {% endif %}
+    {{ inline_admin_formset.management_form }}
+    {% for inline_admin_form in inline_admin_formset.forms %}
+        {% if inline_admin_form.has_changed %}
+            <input type="hidden" name="{{ inline_admin_form.prefix }}-id" value="{{ inline_admin_form.instance.pk }}">
+        {% endif %}
+        <div class="inline-related {{ inline_admin_form.form.is_valid|yesno:'valid,invalid' }}">
+            <div class="form-row">
+                {% for fieldset in inline_admin_form %}
+                    <fieldset class="module aligned">
+                        {% for line in fieldset %}
+                            {% for field in line %}
+                                <div{% if field.is_hidden %} class="hidden"{% elif not field.field.required %} class="optional"{% endif %}>
+                                    {{ field.errors }}
+                                    <div>
+                                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                        {{ field.field }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </fieldset>
+                {% endfor %}
+            </div>
+            <div class="form-row actions">
+                <input type="submit" class="default" value="{% trans 'Save' %}" name="_continue">
+            </div>
+        </div>
+    {% endfor %}
+</fieldset>

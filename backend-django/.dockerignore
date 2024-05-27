@@ -1,0 +1,7 @@
+db.sqlite3
+secrets
+
+node_modules
+*.log
+*.pyc
+__pycache__/
