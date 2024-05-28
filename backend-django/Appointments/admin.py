@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from .models import Appointment, Note, Disposition
+from django.utils.html import format_html
 
 User = get_user_model()
 app_label = apps.get_app_config('Appointments').label
@@ -62,7 +63,7 @@ class NoteInline(admin.TabularInline):
 class AppointmentAdmin(admin.ModelAdmin):
     list_display = (
         'appointment_id', 'created_at', 'user_phone_agent', 'user_field_agent', 
-        'customer', 'scheduled', 'complete', 'disposition_id'
+        'customer', 'scheduled', 'complete', 'disposition_id',
     )
     list_filter = ('scheduled', 'complete', 'customer')
     search_fields = (
@@ -76,7 +77,7 @@ class AppointmentAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_superuser:
             return ('created_at',)  # Or any other fields you always want to be readonly
-        permissions = ['created_at', 'user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete', 'disposition']
+        permissions = ['created_at', 'user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete', 'disposition','recording']
         if request.user.has_perm(f'{app_label}.change_disposition'):
             items_to_remove = ['disposition', 'complete']
             permissions = [item for item in permissions if item not in items_to_remove]
@@ -84,7 +85,7 @@ class AppointmentAdmin(admin.ModelAdmin):
             items_to_remove = ['user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete']
             permissions = [item for item in permissions if item not in items_to_remove]
         return tuple(permissions)
-        
+    
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)

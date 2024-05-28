@@ -37,6 +37,8 @@ class Appointment(models.Model):
         blank=True, 
         default=get_default_disposition
     )
+    recording = models.TextField(default='', blank=True)
+
     class Meta:
         permissions = (
             ("change_all_appointment_details", "Can change all appointment details"),
