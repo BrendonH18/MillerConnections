@@ -15,12 +15,6 @@ class NoteInline(admin.TabularInline):
         qs = super(NoteInline, self).get_queryset(request)
         if request.user.has_perm(f'{app_label}.view_note'):
             return qs
-        # if request.user.has_perm(f'{app_label}.change_note'):
-        #     return qs.filter(user=request.user)
-        # if request.user.has_perm(f'{app_label}.delete_note'):
-        #     return qs
-        # if request.user.has_perm(f'{app_label}.add_note'):
-        #     return qs
         return qs.none()
 
     def has_change_permission(self, request, obj=None):
@@ -34,6 +28,7 @@ class NoteInline(admin.TabularInline):
         return super(NoteInline, self).has_delete_permission(request, obj)
 
     def has_add_permission(self, request, obj=None):
+        # return request.user.has_perm(f'{app_label}.add_note') or super(NoteInline, self).has_add_permission(request, obj)
         if request.user.has_perm(f'{app_label}.add_note'):
             return True
         return super(NoteInline, self).has_add_permission(request, obj)
@@ -79,7 +74,6 @@ class AppointmentAdmin(admin.ModelAdmin):
     inlines = [NoteInline]
 
     def save_model(self, request, obj, form, change):
-        obj.user = request.user
         super().save_model(request, obj, form, change)
 
     def save_formset(self, request, form, formset, change):
