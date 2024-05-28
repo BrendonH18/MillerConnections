@@ -1,18 +1,19 @@
-from django.conf import settings
 from django.db import models
 from Customers.models import Customer
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 class Appointment(models.Model):
     appointment_id = models.AutoField(primary_key=True)  # INT IDENTITY
     created_at = models.DateTimeField(auto_now_add=True)  # DateTime
     user_phone_agent = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        User,
         related_name='phone_agent',
         on_delete=models.CASCADE
     )  # ForeignKey to User model
     user_field_agent = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        User,
         related_name='field_agent',
         on_delete=models.CASCADE
     )  # ForeignKey to User model
@@ -27,7 +28,7 @@ class Appointment(models.Model):
 
 class Note(models.Model):
     appointment = models.ForeignKey(Appointment, related_name='notes', on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
