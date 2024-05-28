@@ -10,36 +10,36 @@ class NoteInline(admin.TabularInline):
     readonly_fields = ('user',)
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.has_perm('appointments.view_note'):
+        qs = super(NoteInline, self).get_queryset(request)
+        if request.user.has_perm('Appointments.view_note'):
             return qs
-        # if request.user.has_perm('appointments.change_note'):
+        # if request.user.has_perm('Appointments.change_note'):
         #     return qs.filter(user=request.user)
-        # if request.user.has_perm('appointments.delete_note'):
+        # if request.user.has_perm('Appointments.delete_note'):
         #     return qs
-        # if request.user.has_perm('appointments.add_note'):
+        # if request.user.has_perm('Appointments.add_note'):
         #     return qs
         return qs.none()
 
     def has_change_permission(self, request, obj=None):
-        if request.user.has_perm('appointments.change_note'):
+        if request.user.has_perm('Appointments.change_note'):
             return True
-        return super().has_change_permission(request, obj)
+        return super(NoteInline, self).has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
-        if request.user.has_perm('appointments.delete_note'):
+        if request.user.has_perm('Appointments.delete_note'):
             return True
-        return super().has_delete_permission(request, obj)
+        return super(NoteInline, self).has_delete_permission(request, obj)
 
     def has_add_permission(self, request, obj=None):
-        if request.user.has_perm('appointments.add_note'):
+        if request.user.has_perm('Appointments.add_note'):
             return True
-        return super().has_add_permission(request, obj)
+        return super(NoteInline, self).has_add_permission(request, obj)
     
     def has_view_permission(self, request, obj=None):
-        if request.user.has_perm('appointments.view_note'):
+        if request.user.has_perm('Appointments.view_note'):
             return True
-        return super().has_view_permission(request, obj)
+        return super(NoteInline, self).has_view_permission(request, obj)
 
     def get_extra(self, request, obj=None, **kwargs):
         return 1 if obj else 0  # To avoid adding extra forms on a new object
@@ -47,8 +47,8 @@ class NoteInline(admin.TabularInline):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "user":
             kwargs["queryset"] = User.objects.filter(pk=request.user.pk)
-            return super().formfield_for_foreignkey(db_field, request, **kwargs)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+            return super(NoteInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        return super(NoteInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
     
     def save_formset(self, request, form, formset, change):
         if formset.model == Note:

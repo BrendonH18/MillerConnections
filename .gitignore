@@ -3,3 +3,4 @@ __pycache__/
 backend-django/secrets/
 database-postgres/
 backend-django/db.sqlite3
+.vscode/launch.json
