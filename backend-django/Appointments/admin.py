@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.apps import apps
 from django.contrib.auth import get_user_model
-from .models import Appointment, Note
+from .models import Appointment, Note, Disposition
 
 User = get_user_model()
 app_label = apps.get_app_config('Appointments').label
@@ -86,3 +86,8 @@ class AppointmentAdmin(admin.ModelAdmin):
             formset.save_m2m()
         else:
             formset.save()
+
+@admin.register(Disposition)
+class DispositionAdmin(admin.ModelAdmin):
+    list_display = ('name',)  # This tuple specifies the fields to display in the admin list view
+    search_fields = ('name',)  # This enables a search box that searches the 'name' field

@@ -4,7 +4,17 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+class Disposition(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
 class Appointment(models.Model):
+    def get_default_disposition():
+        disposition, created = Disposition.objects.get_or_create(name="Disposition Needed")
+        return disposition.id
+    
     appointment_id = models.AutoField(primary_key=True)  # INT IDENTITY
     created_at = models.DateTimeField(auto_now_add=True)  # DateTime
     user_phone_agent = models.ForeignKey(
@@ -20,11 +30,17 @@ class Appointment(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)  # ForeignKey to Customer
     scheduled = models.DateTimeField()  # DateTime
     complete = models.DateTimeField(blank=True, null=True)  # DateTime, allowing it to be blank or null
-    disposition_id = models.IntegerField(blank=True, null=True)  # INT
+    disposition = models.ForeignKey(
+        Disposition, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        default=get_default_disposition
+    )
+
 
     def __str__(self):
         return f"Appointment for {self.customer.name} on {self.scheduled.strftime('%m/%d/%Y')}"
-
 
 class Note(models.Model):
     appointment = models.ForeignKey(Appointment, related_name='notes', on_delete=models.CASCADE)
