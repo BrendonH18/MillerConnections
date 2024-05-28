@@ -37,7 +37,10 @@ class Appointment(models.Model):
         blank=True, 
         default=get_default_disposition
     )
-
+    class Meta:
+        permissions = (
+            ("change_all_appointment_details", "Can change all appointment details"),
+        )
 
     def __str__(self):
         return f"Appointment for {self.customer.name} on {self.scheduled.strftime('%m/%d/%Y')}"

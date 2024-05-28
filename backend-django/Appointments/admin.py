@@ -70,8 +70,21 @@ class AppointmentAdmin(admin.ModelAdmin):
         'user_field_agent__username', 'disposition_id'
     )
     ordering = ('-created_at',)
-    readonly_fields = ('created_at',)
+    # readonly_fields = ('created_at',)
     inlines = [NoteInline]
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return ('created_at',)  # Or any other fields you always want to be readonly
+        permissions = ['created_at', 'user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete', 'disposition']
+        if request.user.has_perm(f'{app_label}.change_disposition'):
+            items_to_remove = ['disposition', 'complete']
+            permissions = [item for item in permissions if item not in items_to_remove]
+        if request.user.has_perm(f'{app_label}.change_all_appointment_details'):
+            items_to_remove = ['user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete']
+            permissions = [item for item in permissions if item not in items_to_remove]
+        return tuple(permissions)
+        
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
