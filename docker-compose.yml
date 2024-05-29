@@ -31,6 +31,9 @@ services:
   #     context: ./frontend-react/
   #   volumes:
   #     - react_build:/react/build
+  #   ports:
+  #     - "3000:3000"
+  #   container_name: frontend
   # nginx:
   #   image: nginx:latest
   #   ports:
@@ -65,8 +68,9 @@ services:
 #   redis:
 #     image: redis:alpine
 #     container_name: redis
-# volumes:
-#   react_build:
+
+volumes:
+  react_build:
 
 secrets:
   DJANGO_SECRET_KEY:
