@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from .models import Appointment, Note, Disposition
+from .forms import AppointmentForm
 from django.utils.html import format_html
 
 User = get_user_model()
@@ -61,6 +62,8 @@ class NoteInline(admin.TabularInline):
 
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
+    form = AppointmentForm
+
     list_display = (
         'appointment_id', 'created_at', 'user_phone_agent', 'user_field_agent', 
         'customer', 'scheduled', 'complete', 'disposition_id',
@@ -88,6 +91,7 @@ class AppointmentAdmin(admin.ModelAdmin):
     
 
     def save_model(self, request, obj, form, change):
+        form.save(commit=True, user=request.user)
         super().save_model(request, obj, form, change)
 
     def save_formset(self, request, form, formset, change):
