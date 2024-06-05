@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from .models import Appointment, Note, Disposition
-from .forms import AppointmentForm
+from .forms import AppointmentForm, ReadOnlyAppointmentForm
 from django.utils.html import format_html
 
 User = get_user_model()
@@ -75,6 +75,16 @@ class AppointmentAdmin(admin.ModelAdmin):
     )
     ordering = ('-created_at',)
     # readonly_fields = ('created_at',)
+
+    fieldsets = (
+        ('Customer Information', {
+            'fields': ('customer_name', 'customer_phone1', 'customer_phone2', 'customer_street', 'customer_state', 'customer_zip')
+        }),
+        ('Appointment Information', {
+            'fields': ('user_field_agent','scheduled', 'complete', 'disposition', 'recording')
+        }),
+    )
+
     inlines = [NoteInline]
 
     def get_readonly_fields(self, request, obj=None):
@@ -93,6 +103,11 @@ class AppointmentAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         form.save(commit=True, user=request.user)
         super().save_model(request, obj, form, change)
+
+    # def get_form(self, request, obj=None, **kwargs):
+    #     # if not self.has_change_permission(request, obj):
+    #     #     return ReadOnlyAppointmentForm
+    #     return AppointmentForm
 
     def save_formset(self, request, form, formset, change):
         if formset.model == Note:

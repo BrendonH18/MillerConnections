@@ -11,14 +11,14 @@ class Disposition(models.Model):
     def __str__(self):
         return self.name
     
-class ChangeLog(models.Model):
-    appointment = models.ForeignKey('Appointment', related_name='changes', on_delete=models.CASCADE)
-    changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    change_timestamp = models.DateTimeField(default=timezone.now)
-    changes = models.TextField()
+# class ChangeLog(models.Model):
+#     appointment = models.ForeignKey('Appointment', related_name='changes', on_delete=models.CASCADE)
+#     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
+#     change_timestamp = models.DateTimeField(default=timezone.now)
+#     changes = models.TextField()
 
-    def __str__(self):
-        return f"Change by {self.changed_by} on {self.change_timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+#     def __str__(self):
+#         return f"Change by {self.changed_by} on {self.change_timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
 
 
 class Appointment(models.Model):
@@ -68,12 +68,12 @@ class Appointment(models.Model):
                 new_value = getattr(self, field_name)
                 if original_value != new_value:
                     changes.append(f"{field.verbose_name}: {original_value} -> {new_value}")
-            if changes:
-                ChangeLog.objects.create(
-                    appointment=self,
-                    changed_by=self.user,  # Assuming the user_phone_agent is the one making changes
-                    changes='\n'.join(changes)
-                )
+            # if changes:
+            #     ChangeLog.objects.create(
+            #         appointment=self,
+            #         changed_by=self.user,  # Assuming the user_phone_agent is the one making changes
+            #         changes='\n'.join(changes)
+            #     )
         super().save(*args, **kwargs)   
 
 class Note(models.Model):
