@@ -1,5 +1,43 @@
 from django import forms
-from .models import Appointment, Customer
+from .models import Appointment, Customer, Disposition
+from django.contrib.auth import get_user_model
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
+
+User = get_user_model()
+
+class ReadOnlyWidget(forms.Widget):
+    def render(self, name, value, attrs=None, renderer=None):
+        if value is None:
+            value = ''
+        return format_html('<div class="readonly">{}</div>', value)
+    
+class DateTimeLocalInput(forms.DateTimeInput):
+    input_type = 'datetime-local'
+
+    def render(self, name, value, attrs=None, renderer=None):
+        rendered = super().render(name, value, attrs, renderer)
+        script = '''
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var datetimeInputs = document.querySelectorAll('input[type="datetime-local"]');
+                datetimeInputs.forEach(function(input) {
+                    input.addEventListener('change', function() {
+                        var value = input.value;
+                        if (value) {
+                            var date = new Date(value);
+                            var minutes = date.getMinutes();
+                            var newMinutes = minutes >= 30 ? 30 : 0;
+                            date.setMinutes(newMinutes, 0, 0);
+                            var newValue = date.toISOString().slice(0, 16);
+                            input.value = newValue;
+                        }
+                    });
+                });
+            });
+            </script>
+        '''
+        return mark_safe(rendered + script)
 
 class AppointmentForm(forms.ModelForm):
     # Fields for the related Customer model
@@ -10,8 +48,10 @@ class AppointmentForm(forms.ModelForm):
     customer_state = forms.CharField(max_length=255, required=True, label='State')
     customer_zip = forms.CharField(max_length=10, required=True, label='Zip')
     recording = forms.CharField(widget=forms.TextInput(), required=False)
-    # scheduled = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
-    # complete = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
+    scheduled = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
+    complete = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
+    user_field_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Field Agent')
+    disposition = forms.ModelChoiceField(queryset=Disposition.objects.all(), required=True, label='Disposition')
 
 
     class Meta:
@@ -19,15 +59,15 @@ class AppointmentForm(forms.ModelForm):
         fields = [
             'user_field_agent',
             'scheduled',
-            # 'complete',
-            # 'disposition',
+            'complete',
+            'disposition',
             'recording',
         ]
 
     def __init__(self, *args, **kwargs):
         # Call the base class method to initialize the form
         super().__init__(*args, **kwargs)
-        
+
         # If an instance is provided (i.e., editing an existing appointment),
         # populate the customer-related fields with the customer's data
         if self.instance and self.instance.pk:
@@ -61,20 +101,19 @@ class AppointmentForm(forms.ModelForm):
                 customer.state = self.cleaned_data['customer_state']
                 customer.zip = self.cleaned_data['customer_zip']
                 customer.save()
-             
+
             appointment.customer = customer
             if user:
                 appointment.user_phone_agent = user
             appointment.save()
         return appointment
-    
+
 
 class ReadOnlyAppointmentForm(AppointmentForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs['readonly'] = True
-            field.widget.attrs['disabled'] = True
+        for field_name, field in self.fields.items():
+                field.widget = ReadOnlyWidget()
 
     def save(self, commit=True, user=None):
         # Prevent saving as this form is read-only

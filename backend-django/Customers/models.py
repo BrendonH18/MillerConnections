@@ -14,7 +14,7 @@ class Customer(models.Model):
     def __str__(self):
         return f"{self.name} - {self.state}"
     
-    # class Meta:
-    #     permissions = (
-    #         ("change_no_customer_details_on_appointment_form", "Can change no customer details on appointment form"),
-    #     )
+    class Meta:
+        permissions = (
+            ("change_customer_details_on_appointment_form", "Can change customer details on appointment form"),
+        )

@@ -62,7 +62,7 @@ class NoteInline(admin.TabularInline):
 
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
-    form = AppointmentForm
+    # form = AppointmentForm
 
     list_display = (
         'appointment_id', 'created_at', 'user_phone_agent', 'user_field_agent', 
@@ -104,10 +104,10 @@ class AppointmentAdmin(admin.ModelAdmin):
         form.save(commit=True, user=request.user)
         super().save_model(request, obj, form, change)
 
-    # def get_form(self, request, obj=None, **kwargs):
-    #     # if not self.has_change_permission(request, obj):
-    #     #     return ReadOnlyAppointmentForm
-    #     return AppointmentForm
+    def get_form(self, request, obj=None, **kwargs):
+        if request.user.has_perm(f'Customers.change_customer_details_on_appointment_form'):
+            return AppointmentForm
+        return ReadOnlyAppointmentForm
 
     def save_formset(self, request, form, formset, change):
         if formset.model == Note:
