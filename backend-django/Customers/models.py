@@ -12,7 +12,7 @@ class Customer(models.Model):
     zip = models.CharField(max_length=10)  # VarChar, typically zip codes are short
 
     def __str__(self):
-        return f"{self.name} - {self.state}"
+        return f"{self.name}"
     
     class Meta:
         permissions = (

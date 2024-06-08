@@ -4,8 +4,10 @@ from django.contrib.auth import get_user_model
 from .models import Appointment, Note, Disposition
 from .forms import AppointmentForm, ReadOnlyAppointmentForm
 from django.utils.html import format_html
+from core.admin_custom  import CustomAdminSite
 
 User = get_user_model()
+custom_admin_site = CustomAdminSite(name="custom_admin")
 app_label = apps.get_app_config('Appointments').label
 
 class NoteInline(admin.TabularInline):
@@ -122,5 +124,10 @@ class AppointmentAdmin(admin.ModelAdmin):
 
 @admin.register(Disposition)
 class DispositionAdmin(admin.ModelAdmin):
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        # return request.user.groups.filter(name__in=['Manager']).exists()
+        return False
     list_display = ('name',)  # This tuple specifies the fields to display in the admin list view
     search_fields = ('name',)  # This enables a search box that searches the 'name' field
