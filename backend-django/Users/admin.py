@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .forms import CustomUserCreationForm, CustomUserChangeForm
-from .models import CustomUser
+from .models import CustomUser, Supervision
 from django.contrib.auth.models import Group
 
 @admin.register(CustomUser)
@@ -34,6 +34,15 @@ class CustomUserAdmin(UserAdmin):
     @admin.display(empty_value="N/A", description="Name", ordering="first_name")
     def full_name(self, object):
         return f"{object.first_name} {object.last_name}".title()
+    
+@admin.register(Supervision)
+class SupervisionAdmin(admin.ModelAdmin):
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return request.user.user_permissions.filter(content_type__model=self.model.__name__.lower(), codename='show_on_admin_dashboard').exists()
+    list_display = ('supervisor', 'supervised')
+
 
 admin.site.unregister(Group)
 

@@ -79,7 +79,9 @@ class Appointment(models.Model):
             #         changed_by=self.user,  # Assuming the user_phone_agent is the one making changes
             #         changes='\n'.join(changes)
             #     )
-        super().save(*args, **kwargs)   
+        super().save(*args, **kwargs)
+
+   
 
 class Note(models.Model):
     appointment = models.ForeignKey(Appointment, related_name='notes', on_delete=models.CASCADE)

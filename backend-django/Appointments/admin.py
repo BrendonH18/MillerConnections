@@ -5,6 +5,9 @@ from .models import Appointment, Note, Disposition
 from .forms import AppointmentForm, ReadOnlyAppointmentForm
 from django.utils.html import format_html
 from core.admin_custom  import CustomAdminSite
+from Users.models import Supervision
+from django.db.models import Q
+
 
 User = get_user_model()
 custom_admin_site = CustomAdminSite(name="custom_admin")
@@ -87,11 +90,38 @@ class AppointmentAdmin(admin.ModelAdmin):
             'fields': ('customer_name', 'customer_phone1', 'customer_phone2', 'customer_street', 'customer_state', 'customer_zip')
         }),
         ('Appointment Information', {
-            'fields': ('user_field_agent','scheduled', 'complete', 'disposition', 'recording')
+            'fields': ('user_field_agent','user_phone_agent','scheduled', 'complete', 'disposition', 'recording')
         }),
     )
 
     inlines = [NoteInline]
+
+    def get_queryset(self, request):
+        def get_all_supervised_users(user):
+            supervised_users = set(Supervision.objects.filter(supervisor=user).values_list('supervised', flat=True))
+            all_supervised_users = set(supervised_users)
+
+            while supervised_users:
+                new_supervised_users = set(Supervision.objects.filter(supervisor__in=supervised_users).values_list('supervised', flat=True))
+                supervised_users = new_supervised_users - all_supervised_users
+                all_supervised_users.update(supervised_users)
+
+            return all_supervised_users
+        
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Get all supervised users recursively
+        if request.user.groups.filter(name='Field').exists():
+            all_supervised_users = get_all_supervised_users(request.user)
+            # Filter appointments for the logged-in user or supervised users
+            return qs.filter(Q(user_field_agent=request.user) | Q(user_field_agent__in=all_supervised_users))
+        if request.user.groups.filter(name='Phone').exists():
+            all_supervised_users = get_all_supervised_users(request.user)
+            # Filter appointments for the logged-in user or supervised users
+            return qs.filter(Q(user_phone_agent=request.user) | Q(user_phone_agent__in=all_supervised_users))
+        else:
+            return qs.none()
 
     # def get_readonly_fields(self, request, obj=None):
     #     superuser_permissions = ('created_at',)
@@ -113,7 +143,7 @@ class AppointmentAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def get_form(self, request, obj=None, **kwargs):
-        return AppointmentForm
+        return ReadOnlyAppointmentForm
         # if request.user.has_perm(f'Customers.change_customer_details_on_appointment_form'):
         #     return AppointmentForm
         # return ReadOnlyAppointmentForm

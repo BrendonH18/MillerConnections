@@ -5,12 +5,6 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 User = get_user_model()
-
-class ReadOnlyWidget(forms.Widget):
-    def render(self, name, value, attrs=None, renderer=None):
-        if value is None:
-            value = ''
-        return format_html('<div class="readonly">{}</div>', value)
     
 class DateTimeLocalInput(forms.DateTimeInput):
     input_type = 'datetime-local'
@@ -51,6 +45,7 @@ class AppointmentForm(forms.ModelForm):
     scheduled = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
     complete = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
     user_field_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Field Agent')
+    user_phone_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Phone Agent')
     disposition = forms.ModelChoiceField(queryset=Disposition.objects.all(), required=True, label='Disposition')
 
 
@@ -58,6 +53,7 @@ class AppointmentForm(forms.ModelForm):
         model = Appointment
         fields = [
             'user_field_agent',
+            'user_phone_agent',
             'scheduled',
             'complete',
             'disposition',
@@ -108,12 +104,25 @@ class AppointmentForm(forms.ModelForm):
             appointment.save()
         return appointment
 
+# Not Being Used
 
+class ReadOnlyWidget(forms.Widget):
+    def render(self, name, value, attrs=None, renderer=None):
+        if value is None:
+            value = ''
+        if hasattr(self, 'queryset'):
+            value = self.queryset.get(pk=value).__str__()
+        return format_html(f'<div class="readonly">{value}</div>')
+    
 class ReadOnlyAppointmentForm(AppointmentForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-                field.widget = ReadOnlyWidget()
+                if hasattr(field, 'queryset'):
+                    field.widget = ReadOnlyWidget()
+                    field.widget.queryset = field.queryset
+                else:
+                    field.widget = ReadOnlyWidget()
 
     def save(self, commit=True, user=None):
         # Prevent saving as this form is read-only
