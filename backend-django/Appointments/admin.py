@@ -36,7 +36,7 @@ class NoteInline(admin.TabularInline):
         if request.user.has_perm(f'{app_label}.add_note'):
             return True
         return super(NoteInline, self).has_add_permission(request, obj)
-    
+
     def has_view_permission(self, request, obj=None):
         if request.user.has_perm(f'{app_label}.view_note'):
             return True
@@ -50,7 +50,7 @@ class NoteInline(admin.TabularInline):
             kwargs["queryset"] = User.objects.filter(pk=request.user.pk)
             return super(NoteInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
         return super(NoteInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
-    
+
     def save_formset(self, request, form, formset, change):
         if formset.model == Note:
             instances = formset.save(commit=False)
@@ -64,15 +64,19 @@ class NoteInline(admin.TabularInline):
 
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return request.user.user_permissions.filter(content_type__model=self.model.__name__.lower(), codename='show_on_admin_dashboard').exists()
     # form = AppointmentForm
 
     list_display = (
-        'appointment_id', 'created_at', 'user_phone_agent', 'user_field_agent', 
+        'appointment_id', 'created_at', 'user_phone_agent', 'user_field_agent',
         'customer', 'scheduled', 'complete', 'disposition_id',
     )
     list_filter = ('scheduled', 'complete', 'customer')
     search_fields = (
-        'appointment_id', 'customer__name', 'user_phone_agent__username', 
+        'appointment_id', 'customer__name', 'user_phone_agent__username',
         'user_field_agent__username', 'disposition_id'
     )
     ordering = ('-created_at',)
@@ -89,27 +93,30 @@ class AppointmentAdmin(admin.ModelAdmin):
 
     inlines = [NoteInline]
 
-    def get_readonly_fields(self, request, obj=None):
-        if request.user.is_superuser:
-            return ('created_at',)  # Or any other fields you always want to be readonly
-        permissions = ['created_at', 'user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete', 'disposition','recording']
-        if request.user.has_perm(f'{app_label}.change_disposition'):
-            items_to_remove = ['disposition', 'complete']
-            permissions = [item for item in permissions if item not in items_to_remove]
-        if request.user.has_perm(f'{app_label}.change_all_appointment_details'):
-            items_to_remove = ['user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete']
-            permissions = [item for item in permissions if item not in items_to_remove]
-        return tuple(permissions)
-    
+    # def get_readonly_fields(self, request, obj=None):
+    #     superuser_permissions = ('created_at',)
+    #     if request.user.is_superuser:
+    #         return superuser_permissions  # Or any other fields you always want to be readonly
+    #     permissions = ['created_at', 'user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete', 'disposition','recording']
+
+    #     # if request.user.has_perm(f'{app_label}.change_disposition'):
+    #     #     items_to_remove = ['disposition', 'complete']
+    #     #     permissions = [item for item in permissions if item not in items_to_remove]
+    #     # if request.user.has_perm(f'{app_label}.change_all_appointment_details'):
+    #     #     items_to_remove = ['user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete']
+    #     #     permissions = [item for item in permissions if item not in items_to_remove]
+    #     return tuple(superuser_permissions)
+
 
     def save_model(self, request, obj, form, change):
         form.save(commit=True, user=request.user)
         super().save_model(request, obj, form, change)
 
     def get_form(self, request, obj=None, **kwargs):
-        if request.user.has_perm(f'Customers.change_customer_details_on_appointment_form'):
-            return AppointmentForm
-        return ReadOnlyAppointmentForm
+        return AppointmentForm
+        # if request.user.has_perm(f'Customers.change_customer_details_on_appointment_form'):
+        #     return AppointmentForm
+        # return ReadOnlyAppointmentForm
 
     def save_formset(self, request, form, formset, change):
         if formset.model == Note:
@@ -127,7 +134,6 @@ class DispositionAdmin(admin.ModelAdmin):
     def has_module_permission(self, request):
         if request.user.is_superuser:
             return True
-        # return request.user.groups.filter(name__in=['Manager']).exists()
-        return False
+        return request.user.user_permissions.filter(content_type__model=self.model.__name__.lower(), codename='show_on_admin_dashboard').exists()
     list_display = ('name',)  # This tuple specifies the fields to display in the admin list view
     search_fields = ('name',)  # This enables a search box that searches the 'name' field

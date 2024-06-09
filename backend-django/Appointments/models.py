@@ -10,6 +10,10 @@ class Disposition(models.Model):
 
     def __str__(self):
         return self.name
+    class Meta:
+        permissions = (
+            ("show_on_admin_dashboard", "Show on Admin Dashboard"),
+        )
     
 # class ChangeLog(models.Model):
 #     appointment = models.ForeignKey('Appointment', related_name='changes', on_delete=models.CASCADE)
@@ -52,6 +56,7 @@ class Appointment(models.Model):
 
     class Meta:
         permissions = (
+            ("show_on_admin_dashboard", "Show on Admin Dashboard"),
             ("change_all_appointment_details", "Can change all appointment details"),
         )
 
@@ -84,3 +89,8 @@ class Note(models.Model):
 
     def __str__(self):
         return f"Note by {self.user} on {self.appointment}"
+    
+    class Meta:
+        permissions = (
+            ("show_on_admin_dashboard", "Show on Admin Dashboard"),
+        )

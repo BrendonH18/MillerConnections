@@ -15,6 +15,12 @@ class CustomUser(AbstractUser, PermissionsMixin):
     REQUIRED_FIELDS: list[str] = ["first_name", "last_name"]
 
     objects = CustomUserManager()
+    class Meta:
+        permissions = (
+            ("show_on_admin_dashboard", "Show on Admin Dashboard"),
+        )
+        verbose_name: str = "User"
+        verbose_name_plural = "Users"
 
     def __str__(self) -> str:
         return self.get_full_name()

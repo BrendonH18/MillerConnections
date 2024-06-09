@@ -17,4 +17,6 @@ class Customer(models.Model):
     class Meta:
         permissions = (
             ("change_customer_details_on_appointment_form", "Can change customer details on appointment form"),
+            ("show_on_admin_dashboard", "Show on Admin Dashboard"),
         )
+        
