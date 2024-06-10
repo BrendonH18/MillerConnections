@@ -16,7 +16,7 @@ class CustomUserAdmin(UserAdmin):
     list_display: tuple[str] = ("full_name", "is_staff", "is_active",)
     list_filter: tuple[str] = ("is_staff", "is_active",)
     fieldsets: tuple = (
-        (None, {"fields": ("email", "first_name", "last_name")}),
+        (None, {"fields": ("email", "first_name", "last_name", "password")}),
         ("Permissions", {"fields": ("is_staff", "is_superuser", "is_active", "groups", "user_permissions")}),
     )
     add_fieldsets: tuple = (

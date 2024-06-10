@@ -2,6 +2,12 @@
 
 from django.db import migrations, models
 
+def create_groups(apps, schema_editor):
+    Group = apps.get_model('auth', 'Group')
+    groups = ['Field', 'Phone', 'Internal Manager', 'External Manager']
+
+    for group_name in groups:
+        Group.objects.get_or_create(name=group_name)
 
 class Migration(migrations.Migration):
 
@@ -15,4 +21,5 @@ class Migration(migrations.Migration):
             name='avatar',
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
+        migrations.RunPython(create_groups),
     ]

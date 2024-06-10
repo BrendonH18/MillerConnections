@@ -48,8 +48,12 @@ class AppointmentForm(forms.ModelForm):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-        customer = self.instance.customer
-        appointment = self.instance
+        customer = None
+        appointment = None
+        
+        if self.instance:
+            customer = getattr(self.instance, 'customer', None)
+            appointment = self.instance
 
         lock_mapping = [
             (customer, 'customer_name', 'name'),
@@ -98,7 +102,7 @@ class AppointmentForm(forms.ModelForm):
             for attr in attributes:
                 self.fields[field_name].widget.attrs[attr] = True
 
-        if self.instance and self.instance.pk:
+        if appointment and appointment.pk:
             # Set Initial Value
             # Make Every Value ReadOnly By Default
             for obj, field_name, attr_name in lock_mapping:
