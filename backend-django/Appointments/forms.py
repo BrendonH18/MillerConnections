@@ -5,33 +5,14 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 User = get_user_model()
-    
-class DateTimeLocalInput(forms.DateTimeInput):
-    input_type = 'datetime-local'
 
+class ReadOnlyWidget(forms.Widget):
     def render(self, name, value, attrs=None, renderer=None):
-        rendered = super().render(name, value, attrs, renderer)
-        script = '''
-            <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                var datetimeInputs = document.querySelectorAll('input[type="datetime-local"]');
-                datetimeInputs.forEach(function(input) {
-                    input.addEventListener('change', function() {
-                        var value = input.value;
-                        if (value) {
-                            var date = new Date(value);
-                            var minutes = date.getMinutes();
-                            var newMinutes = minutes >= 30 ? 30 : 0;
-                            date.setMinutes(newMinutes, 0, 0);
-                            var newValue = date.toISOString().slice(0, 16);
-                            input.value = newValue;
-                        }
-                    });
-                });
-            });
-            </script>
-        '''
-        return mark_safe(rendered + script)
+        if value is None:
+            value = ''
+        if hasattr(self, 'queryset'):
+            value = self.queryset.get(pk=value).__str__()
+        return format_html(f'<div class="readonly" >{value}</div>')
 
 class AppointmentForm(forms.ModelForm):
     # Fields for the related Customer model
@@ -48,7 +29,9 @@ class AppointmentForm(forms.ModelForm):
     user_phone_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Phone Agent')
     disposition = forms.ModelChoiceField(queryset=Disposition.objects.all(), required=True, label='Disposition')
 
+    # readonly_fields = ['customer_name']
 
+    
     class Meta:
         model = Appointment
         fields = [
@@ -58,22 +41,86 @@ class AppointmentForm(forms.ModelForm):
             'complete',
             'disposition',
             'recording',
+            # 'customer'
         ]
 
     def __init__(self, *args, **kwargs):
-        # Call the base class method to initialize the form
+        self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
+
+        customer = self.instance.customer
+        appointment = self.instance
+
+        lock_mapping = [
+            (customer, 'customer_name', 'name'),
+            (customer, 'customer_phone1', 'phone1'),
+            (customer, 'customer_phone2', 'phone2'),
+            (customer, 'customer_street', 'street'),
+            (customer, 'customer_state', 'state'),
+            (customer, 'customer_zip', 'zip'),
+            (appointment, 'recording', 'recording'),
+            (appointment, 'scheduled', 'scheduled'),
+            (appointment, 'complete', 'complete'),
+            (appointment, 'user_field_agent', 'user_field_agent'),
+            (appointment, 'user_phone_agent', 'user_phone_agent'),
+            (appointment, 'disposition', 'disposition'),
+        ]
+
+        external_manager_lock_mapping = [
+            (appointment, 'recording', 'recording'),
+            (appointment, 'user_phone_agent', 'user_phone_agent'),
+        ]
+
+        phone_lock_mapping = [
+            (appointment, 'user_phone_agent', 'user_phone_agent'),
+        ]
+
+        field_lock_mapping = [
+            (customer, 'customer_name', 'name'),
+            (customer, 'customer_phone1', 'phone1'),
+            (customer, 'customer_phone2', 'phone2'),
+            (customer, 'customer_street', 'street'),
+            (customer, 'customer_state', 'state'),
+            (customer, 'customer_zip', 'zip'),
+            (appointment, 'recording', 'recording'),
+            (appointment, 'user_field_agent', 'user_field_agent'),
+            (appointment, 'user_phone_agent', 'user_phone_agent'),
+        ]
 
         # If an instance is provided (i.e., editing an existing appointment),
         # populate the customer-related fields with the customer's data
+
+        def is_in_X_lock_mapping(field_name, attr_name, lock_mapping):
+            return any(field == field_name and attr == attr_name for _, field, attr in lock_mapping)
+        
+        def lock_field(field_name):
+            attributes =['readonly', 'disabled']
+            for attr in attributes:
+                self.fields[field_name].widget.attrs[attr] = True
+
         if self.instance and self.instance.pk:
-            customer = self.instance.customer
-            self.fields['customer_name'].initial = customer.name
-            self.fields['customer_phone1'].initial = customer.phone1
-            self.fields['customer_phone2'].initial = customer.phone2
-            self.fields['customer_street'].initial = customer.street
-            self.fields['customer_state'].initial = customer.state
-            self.fields['customer_zip'].initial = customer.zip
+            # Set Initial Value
+            # Make Every Value ReadOnly By Default
+            for obj, field_name, attr_name in lock_mapping:
+                self.fields[field_name].initial = getattr(obj, attr_name)
+                if self.request:
+                    if self.request.user.is_superuser:
+                        continue
+                    elif self.request.user.groups.filter(name="Internal Manager").exists():
+                        continue
+                    elif self.request.user.groups.filter(name="External Manager").exists():
+                        if is_in_X_lock_mapping(field_name, attr_name, external_manager_lock_mapping):
+                            lock_field(field_name)
+                    elif self.request.user.groups.filter(name="Phone").exists():
+                        if is_in_X_lock_mapping(field_name, attr_name, phone_lock_mapping):
+                            lock_field(field_name)
+                    elif self.request.user.groups.filter(name="Field").exists():
+                        if is_in_X_lock_mapping(field_name, attr_name, field_lock_mapping):
+                            lock_field(field_name)
+                    else:
+                        lock_field(field_name)    
+                else:
+                    lock_field(field_name)
 
     def save(self, commit=True, user=None):
         appointment = super().save(commit=False)
@@ -96,28 +143,38 @@ class AppointmentForm(forms.ModelForm):
                 customer.street = self.cleaned_data['customer_street']
                 customer.state = self.cleaned_data['customer_state']
                 customer.zip = self.cleaned_data['customer_zip']
+                if 'customer_name' in self.readonly_fields:
+                    customer.name = self.fields['customer_name'].initial
+                if 'customer_phone1' in self.readonly_fields:
+                    customer.phone1 = self.fields['customer_phone1'].initial
+                if 'customer_phone2' in self.readonly_fields:
+                    customer.phone2 = self.fields['customer_phone2'].initial
+                if 'customer_street' in self.readonly_fields:
+                    customer.street = self.fields['customer_street'].initial
+                if 'customer_state' in self.readonly_fields:
+                    customer.state = self.fields['customer_state'].initial
+                if 'customer_zip' in self.readonly_fields:
+                    customer.zip = self.fields['customer_zip'].initial
+
                 customer.save()
 
             appointment.customer = customer
-            if user:
-                appointment.user_phone_agent = user
+            # if user:
+            #     appointment.user_phone_agent = user
             appointment.save()
         return appointment
 
 # Not Being Used
 
-class ReadOnlyWidget(forms.Widget):
-    def render(self, name, value, attrs=None, renderer=None):
-        if value is None:
-            value = ''
-        if hasattr(self, 'queryset'):
-            value = self.queryset.get(pk=value).__str__()
-        return format_html(f'<div class="readonly">{value}</div>')
+
     
 class ReadOnlyAppointmentForm(AppointmentForm):
     def __init__(self, *args, **kwargs):
+        normal_fields = ['customer_name']
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
+                if field_name in normal_fields:
+                    continue
                 if hasattr(field, 'queryset'):
                     field.widget = ReadOnlyWidget()
                     field.widget.queryset = field.queryset

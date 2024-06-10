@@ -71,7 +71,7 @@ class AppointmentAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return True
         return request.user.user_permissions.filter(content_type__model=self.model.__name__.lower(), codename='show_on_admin_dashboard').exists()
-    # form = AppointmentForm
+    
 
     list_display = (
         'appointment_id', 'created_at', 'user_phone_agent', 'user_field_agent',
@@ -142,11 +142,29 @@ class AppointmentAdmin(admin.ModelAdmin):
         form.save(commit=True, user=request.user)
         super().save_model(request, obj, form, change)
 
+        # if request.user.is_superuser:
+        #     # return super().get_form(request, obj, **kwargs)
+        #     return AppointmentForm(request=request)
+        # else:
+            # kwargs['normal_fields'] = ['customer_name']
+            # kwargs['request'] = request
+            # form = super().get_form(request, obj, **kwargs)
+            # form = super().get_form(request, obj, **kwargs)
+            # form = AppointmentForm
+            # kwargs = {}
+    form = AppointmentForm
     def get_form(self, request, obj=None, **kwargs):
-        return ReadOnlyAppointmentForm
-        # if request.user.has_perm(f'Customers.change_customer_details_on_appointment_form'):
-        #     return AppointmentForm
-        # return ReadOnlyAppointmentForm
+            custom_kwargs = {}
+            custom_kwargs['request'] = request
+            form_class = super().get_form(request, obj, **kwargs)
+            class FormWithRequest(form_class):
+                def __init__(self, *args, **form_kwargs):
+                    form_kwargs.update(custom_kwargs)  # Add custom arguments back
+                    # form_kwargs['request'] = request
+                    super().__init__(*args, **form_kwargs)
+
+            return FormWithRequest
+            return super().get_form(request, obj, **kwargs)
 
     def save_formset(self, request, form, formset, change):
         if formset.model == Note:
