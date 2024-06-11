@@ -14,16 +14,6 @@ class Disposition(models.Model):
         permissions = (
             ("show_on_admin_dashboard", "Show on Admin Dashboard"),
         )
-    
-# class ChangeLog(models.Model):
-#     appointment = models.ForeignKey('Appointment', related_name='changes', on_delete=models.CASCADE)
-#     changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
-#     change_timestamp = models.DateTimeField(default=timezone.now)
-#     changes = models.TextField()
-
-#     def __str__(self):
-#         return f"Change by {self.changed_by} on {self.change_timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
-
 
 class Appointment(models.Model):
     def get_default_disposition():
@@ -62,24 +52,6 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"Appointment for {self.customer.name} on {self.scheduled.strftime('%m/%d/%Y')}"
-    
-    def save(self, *args, **kwargs):
-        if self.pk:  # If the object already exists, it's an update
-            original = Appointment.objects.get(pk=self.pk)
-            changes = []
-            for field in self._meta.fields:
-                field_name = field.name
-                original_value = getattr(original, field_name)
-                new_value = getattr(self, field_name)
-                if original_value != new_value:
-                    changes.append(f"{field.verbose_name}: {original_value} -> {new_value}")
-            # if changes:
-            #     ChangeLog.objects.create(
-            #         appointment=self,
-            #         changed_by=self.user,  # Assuming the user_phone_agent is the one making changes
-            #         changes='\n'.join(changes)
-            #     )
-        super().save(*args, **kwargs)
 
    
 
