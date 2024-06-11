@@ -9,6 +9,18 @@ from Users.models import Supervision
 from django.db.models import Q
 
 
+# Field Agent cost varies between 125 - 200
+# Phone Agent get bonuses based on volume. Every 10 installs from 175 tier and up they get a bonus. Otherwise 50.
+
+# Contract: (One or More per Field Rep)
+# name = "Fiber First"
+# receivable = 250
+# payable = 100
+# bonus_eligible = False
+# bonus_calculation = 
+
+# Authentication FrontEnd
+
 User = get_user_model()
 custom_admin_site = CustomAdminSite(name="custom_admin")
 app_label = apps.get_app_config('Appointments').label
@@ -123,35 +135,10 @@ class AppointmentAdmin(admin.ModelAdmin):
         else:
             return qs.none()
 
-    # def get_readonly_fields(self, request, obj=None):
-    #     superuser_permissions = ('created_at',)
-    #     if request.user.is_superuser:
-    #         return superuser_permissions  # Or any other fields you always want to be readonly
-    #     permissions = ['created_at', 'user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete', 'disposition','recording']
-
-    #     # if request.user.has_perm(f'{app_label}.change_disposition'):
-    #     #     items_to_remove = ['disposition', 'complete']
-    #     #     permissions = [item for item in permissions if item not in items_to_remove]
-    #     # if request.user.has_perm(f'{app_label}.change_all_appointment_details'):
-    #     #     items_to_remove = ['user_phone_agent', 'user_field_agent', 'customer', 'scheduled', 'complete']
-    #     #     permissions = [item for item in permissions if item not in items_to_remove]
-    #     return tuple(superuser_permissions)
-
-
     def save_model(self, request, obj, form, change):
         form.save(commit=True, user=request.user)
         super().save_model(request, obj, form, change)
 
-        # if request.user.is_superuser:
-        #     # return super().get_form(request, obj, **kwargs)
-        #     return AppointmentForm(request=request)
-        # else:
-            # kwargs['normal_fields'] = ['customer_name']
-            # kwargs['request'] = request
-            # form = super().get_form(request, obj, **kwargs)
-            # form = super().get_form(request, obj, **kwargs)
-            # form = AppointmentForm
-            # kwargs = {}
     form = AppointmentForm
     def get_form(self, request, obj=None, **kwargs):
             custom_kwargs = {}
@@ -164,7 +151,6 @@ class AppointmentAdmin(admin.ModelAdmin):
                     super().__init__(*args, **form_kwargs)
 
             return FormWithRequest
-            return super().get_form(request, obj, **kwargs)
 
     def save_formset(self, request, form, formset, change):
         if formset.model == Note:

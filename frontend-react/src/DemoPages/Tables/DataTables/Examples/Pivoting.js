@@ -1,15 +1,16 @@
 import React, { Fragment } from "react";
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
-
-
 import { Row, Col, Card, CardBody } from "reactstrap";
-
 import DataTable from 'react-data-table-component';
-
 import PageTitle from "../../../../Layout/AppMain/PageTitle";
-
-
 import { makeData } from "./utils";
+import axios from 'axios';
+
+
+
+
+const API_URL = 'http://localhost:8000/api/appointments/';
+
 
 
 export default class DataTableCustomComps extends React.Component {
@@ -17,8 +18,26 @@ export default class DataTableCustomComps extends React.Component {
     super();
     this.state = {
       data: makeData(),
+      appointments: []
     };
   }
+  componentDidMount() {
+    this.fetchAppointments();
+  }
+
+  fetchAppointments() {
+      axios   .get(API_URL)
+          .then(response => {
+              this.setState({ appointments: response.data })
+              console.log(response);
+          })
+          
+          .catch(error => {
+              console.error('There was an error fetching the appointments!', error);
+          });
+  }
+
+
 
   render() {
     const { data } = this.state;
