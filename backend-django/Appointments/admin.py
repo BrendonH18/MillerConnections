@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.apps import apps
 from django.contrib.auth import get_user_model
-from .models import Appointment, Note, Disposition
+from .models import Appointment, Note, Disposition, Contract
 from .forms import AppointmentForm, ReadOnlyAppointmentForm
 from django.utils.html import format_html
 from core.admin_custom  import CustomAdminSite
@@ -102,7 +102,7 @@ class AppointmentAdmin(admin.ModelAdmin):
             'fields': ('customer_name', 'customer_phone1', 'customer_phone2', 'customer_street', 'customer_state', 'customer_zip')
         }),
         ('Appointment Information', {
-            'fields': ('user_field_agent','user_phone_agent','scheduled', 'complete', 'disposition', 'recording')
+            'fields': ('user_field_agent','user_phone_agent','scheduled', 'complete', 'disposition', 'recording','contract')
         }),
     )
 
@@ -171,3 +171,21 @@ class DispositionAdmin(admin.ModelAdmin):
         return request.user.user_permissions.filter(content_type__model=self.model.__name__.lower(), codename='show_on_admin_dashboard').exists()
     list_display = ('name',)  # This tuple specifies the fields to display in the admin list view
     search_fields = ('name',)  # This enables a search box that searches the 'name' field
+
+@admin.register(Contract)
+class ContractAdmin(admin.ModelAdmin):
+    list_display = ('name', 'receivable', 'payable', 'bonus_eligible', 'start_date', 'end_date', 'created_at')
+    list_filter = ('bonus_eligible', 'start_date', 'end_date')
+    search_fields = ('name', 'users__email', 'users__first_name', 'users__last_name')
+    filter_horizontal = ('users',)
+
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'receivable', 'payable', 'bonus_eligible', 'start_date', 'end_date', 'users')
+        }),
+    )
+
+    def get_readonly_fields(self, request, obj=None):
+        if not request.user.is_superuser:
+            return ['name', 'receivable', 'payable', 'bonus_eligible', 'start_date', 'end_date', 'users']
+        return []

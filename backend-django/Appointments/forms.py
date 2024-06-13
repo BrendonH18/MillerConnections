@@ -1,8 +1,9 @@
 from django import forms
-from .models import Appointment, Customer, Disposition
+from .models import Appointment, Customer, Disposition, Contract
 from django.contrib.auth import get_user_model
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -28,10 +29,8 @@ class AppointmentForm(forms.ModelForm):
     user_field_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Field Agent')
     user_phone_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Phone Agent')
     disposition = forms.ModelChoiceField(queryset=Disposition.objects.all(), required=True, label='Disposition')
+    contract = forms.ModelChoiceField(queryset=Contract.objects.none(), required=False, label='Contract')
 
-    # readonly_fields = ['customer_name']
-
-    
     class Meta:
         model = Appointment
         fields = [
@@ -41,7 +40,8 @@ class AppointmentForm(forms.ModelForm):
             'complete',
             'disposition',
             'recording',
-            # 'customer'
+            'contract'
+            # 'customer',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -53,7 +53,20 @@ class AppointmentForm(forms.ModelForm):
         
         if self.instance:
             customer = getattr(self.instance, 'customer', None)
-            appointment = self.instance
+            # appointment = self.instance
+            appointment = getattr(self, 'instance', None)
+
+        if appointment:
+            if appointment.user_field_agent_id == True:
+                self.fields['contract'].queryset = Contract.objects.filter(
+                    users=kwargs['instance'].user_field_agent,
+                    start_date__lte=timezone.now(),
+                    end_date__gte=timezone.now()
+                )
+            else:
+                self.fields['contract'].queryset = Contract.objects.none()
+        else:
+            self.fields['contract'].queryset = Contract.objects.none()
 
         lock_mapping = [
             (customer, 'customer_name', 'name'),
@@ -68,6 +81,7 @@ class AppointmentForm(forms.ModelForm):
             (appointment, 'user_field_agent', 'user_field_agent'),
             (appointment, 'user_phone_agent', 'user_phone_agent'),
             (appointment, 'disposition', 'disposition'),
+            (appointment, 'contract', 'contract')
         ]
 
         external_manager_lock_mapping = [
