@@ -108,6 +108,9 @@ class AppointmentAdmin(admin.ModelAdmin):
 
     inlines = [NoteInline]
 
+    class Media:
+        js = ('appointments/update_contract_given_field_agent.js',)
+
     def get_queryset(self, request):
         def get_all_supervised_users(user):
             supervised_users = set(Supervision.objects.filter(supervisor=user).values_list('supervised', flat=True))

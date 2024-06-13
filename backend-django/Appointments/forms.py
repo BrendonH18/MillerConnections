@@ -29,7 +29,7 @@ class AppointmentForm(forms.ModelForm):
     user_field_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Field Agent')
     user_phone_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Phone Agent')
     disposition = forms.ModelChoiceField(queryset=Disposition.objects.all(), required=True, label='Disposition')
-    contract = forms.ModelChoiceField(queryset=Contract.objects.none(), required=False, label='Contract')
+    contract = forms.ModelChoiceField(queryset=Contract.objects.all(), required=False, label='Contract')
 
     class Meta:
         model = Appointment
@@ -56,17 +56,17 @@ class AppointmentForm(forms.ModelForm):
             # appointment = self.instance
             appointment = getattr(self, 'instance', None)
 
-        if appointment:
-            if appointment.user_field_agent_id == True:
-                self.fields['contract'].queryset = Contract.objects.filter(
-                    users=kwargs['instance'].user_field_agent,
-                    start_date__lte=timezone.now(),
-                    end_date__gte=timezone.now()
-                )
-            else:
-                self.fields['contract'].queryset = Contract.objects.none()
-        else:
-            self.fields['contract'].queryset = Contract.objects.none()
+        # if appointment:
+        #     if appointment.user_field_agent_id == True:
+        #         self.fields['contract'].queryset = Contract.objects.filter(
+        #             users=kwargs['instance'].user_field_agent,
+        #             start_date__lte=timezone.now(),
+        #             end_date__gte=timezone.now()
+        #         )
+        #     else:
+        #         self.fields['contract'].queryset = Contract.objects.none()
+        # else:
+        #     self.fields['contract'].queryset = Contract.objects.none()
 
         lock_mapping = [
             (customer, 'customer_name', 'name'),
@@ -161,18 +161,18 @@ class AppointmentForm(forms.ModelForm):
                 customer.street = self.cleaned_data['customer_street']
                 customer.state = self.cleaned_data['customer_state']
                 customer.zip = self.cleaned_data['customer_zip']
-                if 'customer_name' in self.readonly_fields:
-                    customer.name = self.fields['customer_name'].initial
-                if 'customer_phone1' in self.readonly_fields:
-                    customer.phone1 = self.fields['customer_phone1'].initial
-                if 'customer_phone2' in self.readonly_fields:
-                    customer.phone2 = self.fields['customer_phone2'].initial
-                if 'customer_street' in self.readonly_fields:
-                    customer.street = self.fields['customer_street'].initial
-                if 'customer_state' in self.readonly_fields:
-                    customer.state = self.fields['customer_state'].initial
-                if 'customer_zip' in self.readonly_fields:
-                    customer.zip = self.fields['customer_zip'].initial
+                # if 'customer_name' in self.readonly_fields:
+                #     customer.name = self.fields['customer_name'].initial
+                # if 'customer_phone1' in self.readonly_fields:
+                #     customer.phone1 = self.fields['customer_phone1'].initial
+                # if 'customer_phone2' in self.readonly_fields:
+                #     customer.phone2 = self.fields['customer_phone2'].initial
+                # if 'customer_street' in self.readonly_fields:
+                #     customer.street = self.fields['customer_street'].initial
+                # if 'customer_state' in self.readonly_fields:
+                #     customer.state = self.fields['customer_state'].initial
+                # if 'customer_zip' in self.readonly_fields:
+                #     customer.zip = self.fields['customer_zip'].initial
 
                 customer.save()
 
