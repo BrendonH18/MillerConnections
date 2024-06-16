@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils import timezone
+from django.db.models import Q
 
 User = get_user_model()
 
@@ -16,7 +17,6 @@ class ReadOnlyWidget(forms.Widget):
         return format_html(f'<div class="readonly" >{value}</div>')
 
 class AppointmentForm(forms.ModelForm):
-    # Fields for the related Customer model
     customer_name = forms.CharField(max_length=255, required=True, label='Name')
     customer_phone1 = forms.IntegerField(required=True, label='Phone (Primary)')
     customer_phone2 = forms.IntegerField(required=False, label='Phone (Secondary)')
@@ -26,8 +26,8 @@ class AppointmentForm(forms.ModelForm):
     recording = forms.CharField(widget=forms.TextInput(), required=False)
     scheduled = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
     complete = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
-    user_field_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Field Agent')
-    user_phone_agent = forms.ModelChoiceField(queryset=User.objects.all(), required=True, label='Phone Agent')
+    user_field_agent = forms.ModelChoiceField(queryset=User.objects.filter(groups__name = "Field"), required=True, label='Field Agent')
+    user_phone_agent = forms.ModelChoiceField(queryset=User.objects.filter(groups__name = "Phone"), required=True, label='Phone Agent')
     disposition = forms.ModelChoiceField(queryset=Disposition.objects.all(), required=True, label='Disposition')
     contract = forms.ModelChoiceField(queryset=Contract.objects.all(), required=False, label='Contract')
 
