@@ -3,10 +3,12 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-class Availability(models.Model):
+class TimeSlot(models.Model):
+    HOUR_CHOICES = [(i, f'{i}:00') for i in range(6, 22)]
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField()
-    hour = models.IntegerField(choices=[(i, f'{i}:00') for i in range(24)])  # 24-hour format
+    hour = models.IntegerField(choices=HOUR_CHOICES)  # 24-hour format
     is_available = models.BooleanField(default=True)
 
     class Meta:
