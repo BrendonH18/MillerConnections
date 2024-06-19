@@ -3,9 +3,11 @@
 from django.http import JsonResponse
 from django.views.generic import View
 from .models import TimeSlot
-from django.utils.decorators import method_decorator
 from datetime import datetime, timedelta
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
 
+@method_decorator(login_required, name='dispatch')
 class TimeSlotListView(View):
     def get(self, request, *args, **kwargs):
         user_id = request.GET.get('user_id')
@@ -36,7 +38,7 @@ class TimeSlotListView(View):
                     'possible_hours': possible_hours,
                     'week_start':start_of_week.strftime('%Y-%m-%d'),
                     'week_end': end_of_week.strftime('%Y-%m-%d'),
-                    'available_times': [{'date': time.date.strftime('%Y-%m-%d'), 'time': time.hour} for time in available_times]
+                    'available_times': [{'date': timeSlot.date.strftime('%Y-%m-%d'), 'time': timeSlot.hour, 'source': timeSlot.source} for timeSlot in available_times]
                 }
                 return JsonResponse(response_data, safe=False)
             except ValueError:
@@ -44,7 +46,8 @@ class TimeSlotListView(View):
         else:
             return JsonResponse({'error': 'Date parameter missing'}, status=400)
 
-class ToggleTimeSlot(View):
+@method_decorator(login_required, name='dispatch')
+class ToggleTimeSlot_by_User(View):
     def post(self, request, *args, **kwargs):
         date = request.POST.get('date')
         time = request.POST.get('time')
@@ -56,14 +59,21 @@ class ToggleTimeSlot(View):
         if not userId:
             return JsonResponse({'error': 'userId parameter missing'}, status=400)
         
+        action = "none"
+        
         try:
             timeslot = TimeSlot.objects.get(user_id=userId, date=date, hour=time)
-            # TimeSlot exists, delete it
-            timeslot.delete()
-            action = 'deleted'
+            if timeslot.source == 'system':
+                timeslot.created_by = request.user
+                timeslot.source = 'user'
+                timeslot.save()
+                action = 'updated'
+            else:
+                timeslot.delete()
+                action = 'deleted'
         except TimeSlot.DoesNotExist:
             # TimeSlot does not exist, create it
-            TimeSlot.objects.create(user_id=userId, date=date, hour=time)
+            TimeSlot.objects.create(user_id=userId, date=date, hour=time, created_by=request.user, source='user')
             action = 'created'
         response_data = {
             'action': action,

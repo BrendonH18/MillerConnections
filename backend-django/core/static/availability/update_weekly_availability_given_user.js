@@ -29,7 +29,6 @@ jQuery(function($){
     });
 
     $(document).ready(function(){
-        // Dynamically add Bootstrap 4 CSS link to <head>
         if ($('head link[href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"]').length === 0) {
             // Dynamically add Bootstrap 4 CSS link to <head> if it doesn't exist
             $('head').append('<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">');
@@ -47,65 +46,9 @@ jQuery(function($){
         // Append #gridContainer to the end of the selected fieldset
         if ($('#gridContainer').length === 0) {
             $('#timeslot_form > div > fieldset').append($('<div class="form-row" id="gridContainer"></div>'));
-        };
-
-        function initializeCheckAndClick() {
-            function checkElementAndClick() {
-                // Check if the element is on the DOM
-                if ($('#id_date').siblings('.bootstrap-datetimepicker-widget.usetwentyfour').length === 0) {
-                    // If the element is not found, click the specified element
-                    var targetElement = $('#timeslot_form > div > fieldset > div:nth-child(2) > div > div > div > div');
-                    targetElement.click()
-                    console.log("click")
-                } else {
-                    console.log('no click')
-                }
-            }
-    
-            // Run the checkElementAndClick function at regular intervals (e.g., every second)
-            setInterval(checkElementAndClick, 200);
-        }
-        // Initialize the check and click functionality
-        // initializeCheckAndClick();
-        function handleDateChange() {
-            // $.ajax({
-            //     url:"/appointments/get_contracts/",
-            //     type:"POST",
-            //     data:{user_field_agent_id: $(this).val(),},
-            //     dataType: "json",
-            //     success: function(result) {
-            //         var $select = $("#id_contract");
-            //         var $label = $('label[for="id_contract"]');
-            //         $select.empty()
-            //         if (result.contracts && result.contracts.length > 0) {
-            //             $.each(result.contracts, function(index, contract) {
-            //                 $select.append(
-            //                     $('<option></option>')
-            //                         .attr('value', contract.value)
-            //                         .text(contract.text)
-            //                 );
-            //             });
-            //             if (result.contracts.length > 1) {
-            //                 $label.text('Contract ('+result.contracts.length+"):");
-            //             } else {
-            //                 $label.text("Contract:");
-            //             }
-            //         } else {
-            //             $select.append('<option value="" selected="">---------</option>');
-            //             $label.text("Contract:");
-            //         }
-            //     },
-            //     error: function(e){
-            //         console.error(JSON.stringify(e));
-            //     },
-            // });
         }
         $('#id_date').parent().on('dp.change', ev => {
-            // var  = $('.submit-row input[type="submit"]').prev().last()
-            
-            // var styleElement = $('<style></style>').text(customBtnStyle);
-            // $('head').append(styleElement);
-            
+         
             function addCalendarAfter(HTMLSelector) {
                 // Days of the week
                 async function retrieveAvailabilityData() {
@@ -169,7 +112,7 @@ jQuery(function($){
                     return new Promise(function(resolve, reject) {
                         // Send date and time data to the view via AJAX
                         $.ajax({
-                            url: '/availability/toggle_time_slot_by_user/',
+                            url: '/availability/toggle_time_slot/',
                             method: 'POST', // Adjust method as needed (POST, GET, etc.)
                             data: {
                                 date: date,
@@ -239,22 +182,14 @@ jQuery(function($){
                             if (displayHour === 0) displayHour = 12; // Handle midnight (0 hour)
                             var buttonLabel = displayHour + ' ' + ampm;
                             var button = $('<button type="button" class="btn"></button>').text(buttonLabel);
-                            var source = "none"
-                            isAvailable = false
+                            var isAvailable = false
                             for (var i = 0; i < availableDateTimes.length; i++) {
                                 if (availableDateTimes[i].date === formattedDate && availableDateTimes[i].time === hour) {
                                     isAvailable = true
-                                    source = availableDateTimes[i].source
                                 } 
                             }
                             if (isAvailable) {
-                                if (source === 'user') {
-                                    button.addClass('btn-success'); // Add a class for styling or further identification
-                                } else if (source === 'system') {
-                                    button.addClass('btn-warning')
-                                } else {
-                                    button.addClass('btn-outline-primary'); // Add a class for styling or further identification
-                                }
+                                button.addClass('btn-success'); // Add a class for styling or further identification
                             } else {
                                 button.addClass('btn-outline-primary'); // Add a class for styling or further identification
                             }

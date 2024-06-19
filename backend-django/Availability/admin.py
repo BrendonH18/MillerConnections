@@ -7,7 +7,7 @@ User = get_user_model()
 
 @admin.register(TimeSlot)
 class TimeSlotAdmin(admin.ModelAdmin):
-    list_display = ('user', 'date', 'hour')
+    list_display = ('user', 'date', 'hour', 'created_by', 'source')
     list_filter = ('user', 'date', 'hour')
     search_fields = ('user', 'date')
 
