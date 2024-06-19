@@ -19,7 +19,7 @@ jQuery(function($){
         // these HTTP methods do not require CSRF protection
         return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
     }
-
+    
     $.ajaxSetup({
         beforeSend: function(xhr, settings) {
             if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
@@ -29,7 +29,9 @@ jQuery(function($){
     });
 
     $(document).ready(function(){
-        $("#id_user_field_agent").change(function(){
+        // console.log("Ready 1")
+        function handleUserFieldAgentChange() {
+            // console.log("Send 1")
             $.ajax({
                 url:"/appointments/get_contracts/",
                 type:"POST",
@@ -61,6 +63,8 @@ jQuery(function($){
                     console.error(JSON.stringify(e));
                 },
             });
-        });
+        }
+        $("#id_user_field_agent").change(handleUserFieldAgentChange);
+        $("#id_user_field_agent").trigger('change');
     }); 
 });

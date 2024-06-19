@@ -1,20 +1,23 @@
 from django.contrib import admin
 from .models import TimeSlot
+from .forms import TimeSlotForm
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 @admin.register(TimeSlot)
 class TimeSlotAdmin(admin.ModelAdmin):
-    list_display = ('user', 'date', 'hour', 'is_available')
-    list_filter = ('user', 'date', 'hour', 'is_available')
-    search_fields = ('user__username', 'date')
+    list_display = ('user', 'date', 'hour')
+    list_filter = ('user', 'date', 'hour')
+    search_fields = ('user', 'date')
+
+    form = TimeSlotForm
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if request.user.groups.filter(name='Field').exists():
-            return qs.filter(user=request.user)
-        return qs
+        if request.user.is_superuser:
+            return qs.all()
+        return qs.filter(user=request.user)
 
     def get_readonly_fields(self, request, obj=None):
         if not request.user.is_superuser:
@@ -31,4 +34,3 @@ class TimeSlotAdmin(admin.ModelAdmin):
         extra_context['availabilities'] = TimeSlot.objects.all()
         return super(TimeSlotAdmin, self).changelist_view(request, extra_context=extra_context)
 
-# admin.site.register(TimeSlot, TimeSlotAdmin)

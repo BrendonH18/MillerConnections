@@ -26,4 +26,5 @@ urlpatterns = [
     path('customadmin/', custom_admin_site.urls),
     path('api-auth/', include('rest_framework.urls')),
     path('appointments/', include('Appointments.urls')),
+    path('availability/', include('Availability.urls')),
 ]
