@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TimeSlot
+from .models import TimeSlot, Territory
 from .forms import TimeSlotForm
 from django.contrib.auth import get_user_model
 
@@ -7,9 +7,9 @@ User = get_user_model()
 
 @admin.register(TimeSlot)
 class TimeSlotAdmin(admin.ModelAdmin):
-    list_display = ('user', 'date', 'hour', 'created_by', 'source')
-    list_filter = ('user', 'date', 'hour')
-    search_fields = ('user', 'date')
+    list_display = ('user', 'date', 'hour', 'territory', 'created_by', 'source')
+    list_filter = ('user', 'date', 'hour', 'territory')
+    search_fields = ('user', 'date', 'territory')
 
     form = TimeSlotForm
 
@@ -34,3 +34,17 @@ class TimeSlotAdmin(admin.ModelAdmin):
         extra_context['availabilities'] = TimeSlot.objects.all()
         return super(TimeSlotAdmin, self).changelist_view(request, extra_context=extra_context)
 
+@admin.register(Territory)
+class TerritoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user', 'description', 'is_active')
+    list_filter = ('user', 'is_active')
+    search_fields = ('name', 'user__username')
+    actions = ['make_active', 'make_inactive']
+
+    def make_active(self, request, queryset):
+        queryset.update(is_active=True)
+    make_active.short_description = "Mark selected territories as active"
+
+    def make_inactive(self, request, queryset):
+        queryset.update(is_active=False)
+    make_inactive.short_description = "Mark selected territories as inactive"

@@ -6,26 +6,35 @@ from .models import TimeSlot
 from datetime import datetime, timedelta
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
+from dateutil import parser
 
+def parse_date(date_str):
+    try:
+        # Use dateutil.parser to parse the date string
+        dt = parser.parse(date_str)
+        # Return only the date part
+        return dt.date()
+    except ValueError:
+        # Handle the case where the date string cannot be parsed
+        print("Error: Unable to parse the date string")
+        return None
+    
 @method_decorator(login_required, name='dispatch')
 class TimeSlotListView(View):
+    
     def get(self, request, *args, **kwargs):
         user_id = request.GET.get('user_id')
         date_str = request.GET.get('date')
         if not date_str:
             return JsonResponse({'error': 'Date parameter missing'}, status=400)
         try:
-            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            date = parse_date(date_str)
         except ValueError:
             return JsonResponse({'error': 'Invalid date format. Date should be in YYYY-MM-DD format.'}, status=400)
 
-        if date_str:
+        if date:
             try:
                 possible_hours = [hour[0] for hour in TimeSlot.HOUR_CHOICES]
-
-                # Convert date string to datetime object
-                date = datetime.strptime(date_str, '%Y-%m-%d').date()
-
                 # Determine the start and end of the week
                 start_of_week = date - timedelta(days=date.weekday() + 1)
                 end_of_week = start_of_week + timedelta(days=6)

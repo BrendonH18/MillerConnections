@@ -3,6 +3,26 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+class Territory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='territories')
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)  # Default is True
+
+    def delete(self, *args, **kwargs):
+        # Override the delete method to perform a soft delete
+        self.is_active = False
+        self.save()
+
+    class Meta:
+        unique_together = ('user', 'name')
+        ordering = ['user', 'name']
+        verbose_name = 'Territory'
+        verbose_name_plural = 'Territories'
+
+    def __str__(self):
+        return self.name
+
 class TimeSlot(models.Model):
     HOUR_CHOICES = [(i, f'{i}:00') for i in range(6, 22)]
     
@@ -12,6 +32,20 @@ class TimeSlot(models.Model):
     is_weekly_default = models.BooleanField(default=False, null=False, blank=False)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_time_slots')
     source = models.CharField(max_length=10, choices=[('user', 'User'), ('system', 'System')], default='user')
+    territory = models.ForeignKey(Territory, on_delete=models.SET_NULL, null=True, related_name='time_slots')
+
+    def save(self, *args, **kwargs):
+        if not self.territory:
+            default_territory, created = Territory.objects.get_or_create(
+                user=self.user,
+                name="Default",
+                defaults={
+                    'description': "Placeholder",
+                    'is_active': True
+                }
+            )
+            self.territory = default_territory
+        super(TimeSlot, self).save(*args, **kwargs)
 
     class Meta:
         unique_together = ('user', 'date', 'hour')

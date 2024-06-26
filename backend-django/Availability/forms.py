@@ -1,29 +1,38 @@
 from django import forms
-# from django_flatpickr.widgets import DatePickerInput
-# from django_flatpickr.schemas import FlatpickrOptions
 from django_select2.forms import Select2Widget
-from .models import TimeSlot
+from .models import TimeSlot, Territory
 from bootstrap_datepicker_plus.widgets import DatePickerInput
 
 
-class DateInput(forms.DateInput):
-    input_type = 'date'
+class Select2Mixin:
+    def setup_select2(self, field_name, queryset=None, disabled=False, help_text=None):
+        self.fields[field_name].widget = Select2Widget()
+        if queryset is not None:
+            self.fields[field_name].queryset = queryset
+        if disabled:
+            self.fields[field_name].disabled = True
+            self.fields[field_name].help_text = help_text   
 
-class JQueryDatePickerInput(DatePickerInput):
-    class Media:
-        js = ('https://code.jquery.com/jquery-3.6.0.min.js','availability/update_hourly_availability_given_day_and_user.js')
-
-class TimeSlotForm(forms.ModelForm):
+class TimeSlotForm(Select2Mixin, forms.ModelForm):
     class Meta:
         model = TimeSlot
-        fields = ['user','date']
+        fields = ['user', 'date', 'territory']
         widgets = {
-            'date': JQueryDatePickerInput(options={
-                # 'dayViewHeaderFormat': 'MMMM YYYY',
-                'inline': True,
-                'keepOpen': True,
-                # 'collapse': False
-                # 'showTodayButton': True
-        }),
-            # 'hour': Select2Widget(),
+            'date': DatePickerInput(options={'inline': True, 'keepOpen': True}),
         }
+    class Media:
+        js = ('availability/update_hourly_availability_given_day_and_user.js',)
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.setup_select2('territory', Territory.objects.filter(user=user, is_active=True) if user else None, not user, "Select a user first to choose a territory.")
+
+class TerritoryForm(forms.ModelForm):
+    class Meta:
+        model = Territory
+        fields = ['name', 'user']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setup_select2('user')
