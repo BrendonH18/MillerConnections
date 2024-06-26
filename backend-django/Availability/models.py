@@ -1,6 +1,7 @@
 from django.db import models
-from django.contrib.auth import get_user_model
+from django.utils import timezone
 
+from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class Territory(models.Model):
@@ -8,10 +9,14 @@ class Territory(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)  # Default is True
+    created_at = models.DateTimeField(auto_now_add=True)
+    deleted_at = models.DateTimeField(blank=True, null=True)
+    is_default = models.BooleanField(default=False)
 
     def delete(self, *args, **kwargs):
         # Override the delete method to perform a soft delete
         self.is_active = False
+        self.deleted_at = timezone.now()
         self.save()
 
     class Meta:
@@ -41,7 +46,10 @@ class TimeSlot(models.Model):
                 name="Default",
                 defaults={
                     'description': "Placeholder",
-                    'is_active': True
+                    'is_active': False,
+                    'created_at': timezone.now(),
+                    'deleted_at': timezone.now(),
+                    'is_default': True
                 }
             )
             self.territory = default_territory

@@ -60,7 +60,7 @@ window.onload = function() {
                     });
                 };
 
-                const buildCalendarTable = (HTMLSelector, weekStart, hoursList, availableDateTimes) => {
+                const buildCalendarTable = (HTMLSelector, weekStart, hoursList, availableDateTimes, availableTerritories) => {
                     $(HTMLSelector).empty();
                     const tableContainer = $('<div id="tableContainer"></div>').on('click', 'button.btn', function() {
                         const element = $(this);
@@ -79,11 +79,38 @@ window.onload = function() {
                     const thead = $('<thead></thead>').appendTo(table);
                     const tbody = $('<tbody></tbody>').appendTo(table);
 
-                    const headerRow = $('<tr></tr>').appendTo(thead);
+                    const headerRow1 = $('<tr></tr>').appendTo(thead);
                     for (let i = 0; i < 7; i++) {
                         const currentDate = new Date(weekStart);
                         currentDate.setDate(currentDate.getDate() + i + 1);
-                        $('<th scope="col">' + formatDateString(currentDate.toISOString().split('T')[0]) + '</th>').appendTo(headerRow);
+                        $('<th scope="col">' + formatDateString(currentDate.toISOString().split('T')[0]) + '</th>').appendTo(headerRow1);
+                    }
+
+                    const headerRow2 = $('<tr></tr>').appendTo(thead);
+                    for (let i = 0; i < 7; i++) {
+                        const currentDate = new Date(weekStart);
+                        currentDate.setDate(currentDate.getDate() + i + 1);
+
+                        const th = $('<th scope="col"></th>').appendTo(headerRow2);
+                        const select = $('<select class="form-select"></select>').appendTo(th);
+
+                        if (availableTerritories.length > 1) {
+                            select.removeAttr('disabled');
+                        } else {
+                            select.attr('disabled', 'disabled');
+                        }
+
+                        $('<option></option>').appendTo(select); // Empty option for no default value
+
+                        availableTerritories.forEach(territory => {
+                            const option = $('<option></option>')
+                                .val(territory.id)
+                                .text(territory.name)
+                                .appendTo(select);
+                            if (availableTerritories.length === 1) {
+                                option.prop('selected', true);
+                            }   
+                        });
                     }
 
                     hoursList.forEach(hour => {
@@ -110,7 +137,7 @@ window.onload = function() {
                 };
 
                 retrieveAvailabilityData(ev)
-                    .then(data => buildCalendarTable('#gridContainer', data.week_start, data.possible_hours, data.available_times))
+                    .then(data => buildCalendarTable('#gridContainer', data.week_start, data.possible_hours, data.available_times, data.available_territories))
                     .catch(err => console.error('Error fetching data:', err));
             };
             $('#id_date').parent().on('dp.change', handleDateChange);

@@ -13,7 +13,7 @@ class Select2Mixin:
             self.fields[field_name].disabled = True
             self.fields[field_name].help_text = help_text   
 
-class TimeSlotForm(Select2Mixin, forms.ModelForm):
+class TimeSlotAddForm(Select2Mixin, forms.ModelForm):
     class Meta:
         model = TimeSlot
         fields = ['user', 'date', 'territory']
@@ -36,3 +36,9 @@ class TerritoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setup_select2('user')
+
+
+class TimeSlotChangeForm(forms.ModelForm):
+    class Meta:
+        model = TimeSlot
+        fields = '__all__'  # Include all fields from the TimeSlot model

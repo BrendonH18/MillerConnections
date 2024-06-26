@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import TimeSlot, Territory
-from .forms import TimeSlotForm
+from .forms import TimeSlotAddForm, TimeSlotChangeForm
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -11,7 +11,12 @@ class TimeSlotAdmin(admin.ModelAdmin):
     list_filter = ('user', 'date', 'hour', 'territory')
     search_fields = ('user', 'date', 'territory')
 
-    form = TimeSlotForm
+    def get_form(self, request, obj=None, **kwargs):
+        if obj is None:
+            self.form = TimeSlotAddForm  # Use your specific form for adding
+        else:
+            self.form = TimeSlotChangeForm  # Use your specific form for changing
+        return super(TimeSlotAdmin, self).get_form(request, obj, **kwargs)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -40,6 +45,8 @@ class TerritoryAdmin(admin.ModelAdmin):
     list_filter = ('user', 'is_active')
     search_fields = ('name', 'user__username')
     actions = ['make_active', 'make_inactive']
+
+    readonly_fields = ('created_at', 'deleted_at', 'is_default')
 
     def make_active(self, request, queryset):
         queryset.update(is_active=True)

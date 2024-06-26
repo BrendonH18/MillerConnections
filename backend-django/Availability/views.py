@@ -2,11 +2,15 @@
 
 from django.http import JsonResponse
 from django.views.generic import View
-from .models import TimeSlot
+from .models import TimeSlot, Territory
 from datetime import datetime, timedelta
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from dateutil import parser
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 def parse_date(date_str):
     try:
@@ -43,11 +47,27 @@ class TimeSlotListView(View):
                     user_id=user_id,
                     date__range=[start_of_week, end_of_week]
                 )
+
+                available_territories = Territory.objects.filter(user_id=user_id, is_active=True)
+                if not available_territories.exists():
+                    available_territories = Territory.objects.filter(user_id=user_id, is_default=True)
+                if not available_territories.exists():
+                    available_territories = [Territory.objects.create(
+                        user=User.objects.filter(id=user_id).first(),
+                        name="Default",
+                        description="Placeholder",
+                        is_active=False,
+                        created_at=timezone.now(),
+                        deleted_at=timezone.now(),
+                        is_default=True
+                    )]
+
                 response_data = {
                     'possible_hours': possible_hours,
                     'week_start':start_of_week.strftime('%Y-%m-%d'),
                     'week_end': end_of_week.strftime('%Y-%m-%d'),
-                    'available_times': [{'date': timeSlot.date.strftime('%Y-%m-%d'), 'time': timeSlot.hour, 'source': timeSlot.source} for timeSlot in available_times]
+                    'available_times': [{'date': timeSlot.date.strftime('%Y-%m-%d'), 'time': timeSlot.hour, 'source': timeSlot.source} for timeSlot in available_times],
+                    'available_territories': [{'id': territory.id, 'name': territory.name} for territory in available_territories]
                 }
                 return JsonResponse(response_data, safe=False)
             except ValueError:
