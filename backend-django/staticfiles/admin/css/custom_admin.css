@@ -1,0 +1,16 @@
+#header {
+    background-color: #333;
+    color: white;
+}
+
+.module caption, .inline-group h2 {
+    caption-side: top;
+}
+
+.module h2, .module caption, .inline-group h2 {
+    background: #417690;
+}
+
+.dashboard #content {
+    width: 700px;
+}

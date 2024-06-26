@@ -1,0 +1,14 @@
+#header {
+    background-color: #333;
+    color: white;
+}
+
+#site-name a {
+    color: #4CAF50; /* Custom color for the site name */
+}
+
+
+/* Custom CSS to override CSS variables */
+:root {
+    --secondary: #f48fb1; /* Changing pink to a specific shade for example purposes */
+}
