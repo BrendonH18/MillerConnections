@@ -69,17 +69,55 @@ window.onload = function() {
                 };
 
                 // Function to toggle time slot
-                const toggleTimeSlot = (userId, date, time, territoryId) => {
+                const toggleTimeSlot = (userId, date, time, territoryId, source = 'button') => {
                     return new Promise((resolve, reject) => {
                         $.ajax({
                             url: '/availability/toggle_time_slot_by_user/',
                             method: 'POST',
-                            data: { date, time, userId, territoryId },
+                            data: { date, time, userId, territoryId, source },
                             success: resolve,
                             error: reject
                         });
                     });
                 };
+                const applyColors = () => {
+                    $('#gridContainer button').each(function() {
+                        const element = $(this);
+                        const source = element.data('source');
+                        if (source === 'user') {
+                            element.addClass('btn-success').removeClass('btn-outline-primary');
+                            element.css('background', '');
+                        } else if (source === 'pending') {
+                            element.addClass('btn-outline-primary').removeClass('btn-success');
+                            element.css('background', 'white');
+                        } else if (source === 'recurring') {
+                            // Add code here for 'recurring' if needed in the future
+                        } else if (source === 'settings') {
+                            // Add code here for 'settings' if needed in the future
+                        }
+                    });
+                };
+                const triggerButton = (element, source = "button") => {
+                    const date = element.data('date');
+                    const time = element.data('time');
+                    const userId = $('#id_user').val();
+                    const territoryId = element.data('territoryId');
+            
+                    // Validate data attributes
+                    if (!date || !time || !userId || !territoryId) {
+                        console.error('Missing required data attributes:', { date, time, userId, territoryId });
+                        return;
+                    }
+            
+                    // Toggle the time slot
+                    toggleTimeSlot(userId, date, time, territoryId, source)
+                        .then(response => {
+                            element.data({ date: response.date, time: response.hour, source: response.source, territoryId: response.territory });
+                            applyColors()
+                        })
+                        .catch(error => console.error('Toggle failed:', error));
+                };
+
 
                 // Function to get first matching slot
                 const getFirstMatching = (availableDateTimes, date) => {
@@ -87,39 +125,17 @@ window.onload = function() {
                     return match ? match : null;
                 };
 
+                
                 // Function to build calendar table
                 const buildCalendarTable = (HTMLSelector, weekStart, hoursList, availableDateTimes, availableTerritories) => {
                     // Clear the contents of the HTML container
                     $(HTMLSelector).empty();
                 
-                    // Create the table container and set up click event handler for buttons inside it
-                    const tableContainer = $('<div id="tableContainer"></div>').on('click', 'button.btn', function() {
-                        const element = $(this);
-                        const date = element.data('date');
-                        const time = element.data('time');
-                        const userId = $('#id_user').val();
-                        const territoryId = element.data('territoryId');
-                
-                        // Validate data attributes
-                        if (!date || !time || !userId || !territoryId) {
-                            console.error('Missing required data attributes:', { date, time, userId, territoryId });
-                            return;
-                        }
-                
-                        // Toggle the time slot
-                        toggleTimeSlot(userId, date, time, territoryId)
-                            .then(response => {
-                                element.data({ source: response.source, territoryId: response.territoryId });
-                                element.toggleClass('btn-outline-primary btn-success');
-                                // Change button background color based on class
-                                if (element.attr('class').includes('btn-outline')) {
-                                    element.css('background', 'white');
-                                } else {
-                                    element.css('background', '');
-                                }
-                            })
-                            .catch(error => console.error('Toggle failed:', error));
-                    }).appendTo(HTMLSelector);
+                    // Create the table container
+                    const tableContainer = $('<div id="tableContainer"></div>')
+                    tableContainer.appendTo(HTMLSelector)
+                    
+                    
                 
                     // Create the table structure
                     const table = $('<table class="table table-striped table-hover"></table>').appendTo(tableContainer);
@@ -184,13 +200,15 @@ window.onload = function() {
                             // Update all buttons in this column with the selected territory
                             $(`#gridContainer td:nth-child(${i + 1}) button`).each(function() {
                                 $(this).data('territoryId', selectedTerritoryId);
-                                $(this).css('background', $(this).hasClass('btn-outline-primary') ? 'white' : '');
+                                triggerButton($(this), 'dropdown')
                             });
                 
                             // Update the background color of the column based on the rank
                             $(`#gridContainer td:nth-child(${i + 1})`).each(function() {
                                 $(this).css('background-color', colorMapping[rank] || '');
                             });
+
+                            applyColors()
                         });
                     }
                 
@@ -207,16 +225,15 @@ window.onload = function() {
                             // Create a button for each time slot
                             const button = $('<button type="button" class="btn"></button>')
                                 .text(`${displayHour} ${ampm}`)
-                                .data({ date: formattedDate, time: hour, territoryId: initialTerritories[col], source: ''})
-                                .addClass('btn-outline-primary');
+                                .data({ date: formattedDate, time: hour, territoryId: initialTerritories[col]})
+                                // .addClass('btn-outline-primary');
                 
                             // Update button class based on available date times
-                            availableDateTimes.forEach(slot => {
-                                if (slot.date === formattedDate && slot.time === hour) {
-                                    button.removeClass('btn-outline-primary').addClass(slot.source === 'system' ? 'btn-success' : 'btn-warning');
-                                    button.data({ source: slot.source });
-                                }
-                            });
+                            // availableDateTimes.forEach(slot => {
+                            //     if (slot.date === formattedDate && slot.time === hour) {
+                            //         button.data({ source: slot.source });
+                            //     }
+                            // });
                 
                             // Append the button to the table cell
                             $('<td></td>').append(button).appendTo(tr);
@@ -226,7 +243,14 @@ window.onload = function() {
                     // Trigger change event for each select element to update the buttons and column colors initially
                     $('thead select').each(function() {
                         $(this).trigger('change');
+                        applyColors()
                     });
+                    $('#tableContainer').on('click', 'button.btn', function() {
+                        triggerButton($(this))
+                        applyColors()
+                    });
+                    applyColors()
+
                 };
                 
 

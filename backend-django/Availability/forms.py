@@ -49,14 +49,17 @@ class TerritoryForm(forms.ModelForm):
         request = kwargs.pop('request', None)
         all_supervised_users = kwargs.pop('all_supervised_users', None)
         super().__init__(*args, **kwargs)
-        if request and all_supervised_users is not None:
-            queryset = User.objects.filter(
-                Q(id__in=all_supervised_users) | Q(id=request.user.id)
-            )
-            self.fields['user'].queryset = queryset
-            if queryset.count() == 1:
-                self.fields['user'].initial = queryset.first()
-                self.fields['user'].disabled = True
+        if request and request.user.is_superuser:
+            pass
+        else:
+            if request and all_supervised_users is not None:
+                queryset = User.objects.filter(
+                    Q(id__in=all_supervised_users) | Q(id=request.user.id)
+                )
+                self.fields['user'].queryset = queryset
+                if queryset.count() == 1:
+                    self.fields['user'].initial = queryset.first()
+                    self.fields['user'].disabled = True
         # self.setup_select2('user')
 
 
@@ -78,7 +81,7 @@ class TimeSlotChangeForm(forms.ModelForm):
 
         self._configure_user_field(instance)
         self._configure_created_by_field(instance)
-        self._configure_source_field()
+        self._configure_source_field(request)
         self._configure_territory_field(instance, request)
 
     def _configure_user_field(self, instance):
@@ -93,9 +96,10 @@ class TimeSlotChangeForm(forms.ModelForm):
         self.fields['created_by'].initial = created_by_query.first()
         self.initial['created_by'] = created_by_query.first().pk
 
-    def _configure_source_field(self):
+    def _configure_source_field(self, request):
         initial_source = self.fields['source'].initial
-        self.fields['source'].choices = [(key, value) for key, value in self.fields['source'].choices if key == initial_source]
+        if not request.user.is_superuser:
+            self.fields['source'].choices = [(key, value) for key, value in self.fields['source'].choices if key == initial_source]
 
     def _configure_territory_field(self, instance, request):
         user = instance.user

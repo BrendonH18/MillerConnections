@@ -10,6 +10,7 @@ from dateutil import parser
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.forms.models import model_to_dict
 
 User = get_user_model()
 
@@ -84,7 +85,7 @@ class TimeSlotListView(View):
 @method_decorator(login_required, name='dispatch')
 class ToggleTimeSlotByUser(View):
     def post(self, request, *args, **kwargs):
-        required_fields = ['date', 'time', 'userId', 'territoryId']
+        required_fields = ['date', 'time', 'userId', 'territoryId', 'source']
         missing_fields = [field for field in required_fields if not request.POST.get(field)]
 
         if missing_fields:
@@ -94,44 +95,43 @@ class ToggleTimeSlotByUser(View):
         time = request.POST.get('time')
         userId = request.POST.get('userId')
         territoryId = request.POST.get('territoryId')
+        source = request.POST.get('source')
+
         
         try:
             territory = Territory.objects.get(id=territoryId)
         except Territory.DoesNotExist:
             return JsonResponse({'error': 'territoryId not found'}, status=400)
         
+        # Consider moving this to a different view. When the Territory at the top is changed, change all territories below.
         try:
-            timeslots_to_update_territory = TimeSlot.objects.filter(user_id=userId, date=date)
-            timeslots_to_update_territory.update(territory=territory)
-        except:
-            pass
-
-        try:
-            timeslot = TimeSlot.objects.get(user_id=userId, date=date, hour=time)
-            if timeslot.source == 'system':
+            timeslot, isCreated = TimeSlot.objects.get_or_create(
+                user_id=userId,
+                date=date,
+                hour=time,
+                defaults={
+                    'source': 'pending',
+                    'created_by': request.user,
+                    'territory': territory,
+                })
+            if timeslot:
+                if source == 'button':
+                    if timeslot.source == 'user':
+                        timeslot.source = 'pending'
+                    elif timeslot.source == 'pending':
+                        timeslot.source = 'user'
                 timeslot.created_by = request.user
-                timeslot.source = 'user'
                 timeslot.territory = territory
                 timeslot.save()
                 action = 'updated'
             else:
-                timeslot.delete()
-                action = 'deleted'
-        except TimeSlot.DoesNotExist:
-            try:
-                TimeSlot.objects.create(user_id=userId, date=date, hour=time, created_by=request.user, source='user', territory=territory)
-                action = 'created'
-            except Exception:
                 return JsonResponse({'error': 'Failed to create TimeSlot'}, status=400)
-        
-        return JsonResponse({
-            'action': action,
-            'date': date,
-            'time': time,
-            'userId': userId,
-            'territoryId': territoryId,
-            'source': 'user'
-        }, safe=False)
+        except:
+            pass
+
+        timeslot_dict = model_to_dict(timeslot)
+        timeslot_dict['action'] = action
+        return JsonResponse(timeslot_dict, safe=False)
     
     # System Generated
     # User Generated, Previously Logged

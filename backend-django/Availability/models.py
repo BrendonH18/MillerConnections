@@ -32,15 +32,23 @@ class Territory(models.Model):
         return self.name
 
 class TimeSlot(models.Model):
-    HOUR_CHOICES = [(i, f'{i}:00') for i in range(6, 22)]
+    HOUR_CHOICES = [(i, f'{i}:00') for i in range(7, 22)]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='time_slots')
     date = models.DateField()
     hour = models.IntegerField(choices=HOUR_CHOICES)  # 24-hour format
-    is_weekly_default = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_time_slots')
-    source = models.CharField(max_length=10, choices=[('user', 'User'), ('system', 'System')], default='user')
+    # User: a person
+    # Pending: no interactions yet
+    # Recurring: Built from "Settings"
+    # Settings: Used to build "Recurring" at regular intervals. 
+    source = models.CharField(max_length=10, choices=[('user', 'User'), ('pending', 'Pending'), ('recurring', 'Recurring'), ('settings', 'Settings')], default='user')
     territory = models.ForeignKey(Territory, on_delete=models.SET_NULL, null=True, related_name='time_slots')
+
+    def weekday(self):
+        return self.date.strftime('%A')
+
+    weekday.short_description = 'Weekday'
 
     def save(self, *args, **kwargs):
         if not self.territory:
