@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import CustomUser, Supervision
 from django.contrib.auth.models import Group
+from core.admin import CustomModelAdmin
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
@@ -36,11 +37,7 @@ class CustomUserAdmin(UserAdmin):
         return f"{object.first_name} {object.last_name}".title()
     
 @admin.register(Supervision)
-class SupervisionAdmin(admin.ModelAdmin):
-    def has_module_permission(self, request):
-        if request.user.is_superuser:
-            return True
-        return request.user.user_permissions.filter(content_type__model=self.model.__name__.lower(), codename='show_on_admin_dashboard').exists()
+class SupervisionAdmin(CustomModelAdmin):
     list_display = ('supervisor', 'supervised')
 
 
@@ -56,9 +53,6 @@ class CustomGroup(Group):
         verbose_name_plural = "Groups"
     
 
-class GroupAdmin(admin.ModelAdmin):
-    def has_module_permission(self, request):
-        if request.user.is_superuser:
-            return True
-        return request.user.user_permissions.filter(content_type__model=self.model.__name__.lower(), codename='show_on_admin_dashboard').exists()
+class GroupAdmin(CustomModelAdmin):
+    pass
 admin.site.register(CustomGroup, GroupAdmin)

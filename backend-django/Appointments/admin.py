@@ -7,6 +7,7 @@ from django.utils.html import format_html
 from core.admin_custom  import CustomAdminSite
 from Users.models import Supervision
 from django.db.models import Q
+from core.admin import CustomModelAdmin
 
 
 # Field Agent cost varies between 125 - 200
@@ -78,13 +79,7 @@ class NoteInline(admin.TabularInline):
             formset.save()
 
 @admin.register(Appointment)
-class AppointmentAdmin(admin.ModelAdmin):
-    def has_module_permission(self, request):
-        if request.user.is_superuser:
-            return True
-        return request.user.user_permissions.filter(content_type__model=self.model.__name__.lower(), codename='show_on_admin_dashboard').exists()
-    
-
+class AppointmentAdmin(CustomModelAdmin):
     list_display = (
         'appointment_id', 'created_at', 'user_phone_agent', 'user_field_agent',
         'customer', 'scheduled', 'complete', 'disposition_id',
@@ -111,28 +106,17 @@ class AppointmentAdmin(admin.ModelAdmin):
     class Media:
         js = ('appointments/update_contract_given_field_agent.js',)
 
+    
     def get_queryset(self, request):
-        def get_all_supervised_users(user):
-            supervised_users = set(Supervision.objects.filter(supervisor=user).values_list('supervised', flat=True))
-            all_supervised_users = set(supervised_users)
-
-            while supervised_users:
-                new_supervised_users = set(Supervision.objects.filter(supervisor__in=supervised_users).values_list('supervised', flat=True))
-                supervised_users = new_supervised_users - all_supervised_users
-                all_supervised_users.update(supervised_users)
-
-            return all_supervised_users
-        
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
+        all_supervised_users = self.get_all_supervised_users(request.user)
         # Get all supervised users recursively
         if request.user.groups.filter(name='Field').exists():
-            all_supervised_users = get_all_supervised_users(request.user)
             # Filter appointments for the logged-in user or supervised users
             return qs.filter(Q(user_field_agent=request.user) | Q(user_field_agent__in=all_supervised_users))
         if request.user.groups.filter(name='Phone').exists():
-            all_supervised_users = get_all_supervised_users(request.user)
             # Filter appointments for the logged-in user or supervised users
             return qs.filter(Q(user_phone_agent=request.user) | Q(user_phone_agent__in=all_supervised_users))
         else:
@@ -150,7 +134,6 @@ class AppointmentAdmin(admin.ModelAdmin):
             class FormWithRequest(form_class):
                 def __init__(self, *args, **form_kwargs):
                     form_kwargs.update(custom_kwargs)  # Add custom arguments back
-                    # form_kwargs['request'] = request
                     super().__init__(*args, **form_kwargs)
 
             return FormWithRequest
@@ -167,16 +150,12 @@ class AppointmentAdmin(admin.ModelAdmin):
             formset.save()
 
 @admin.register(Disposition)
-class DispositionAdmin(admin.ModelAdmin):
-    def has_module_permission(self, request):
-        if request.user.is_superuser:
-            return True
-        return request.user.user_permissions.filter(content_type__model=self.model.__name__.lower(), codename='show_on_admin_dashboard').exists()
+class DispositionAdmin(CustomModelAdmin):
     list_display = ('name',)  # This tuple specifies the fields to display in the admin list view
     search_fields = ('name',)  # This enables a search box that searches the 'name' field
 
 @admin.register(Contract)
-class ContractAdmin(admin.ModelAdmin):
+class ContractAdmin(CustomModelAdmin):
     list_display = ('name', 'receivable', 'payable', 'bonus_eligible', 'start_date', 'end_date', 'created_at')
     list_filter = ('bonus_eligible', 'start_date', 'end_date')
     search_fields = ('name', 'users__email', 'users__first_name', 'users__last_name')

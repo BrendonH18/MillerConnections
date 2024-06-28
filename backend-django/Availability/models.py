@@ -24,6 +24,9 @@ class Territory(models.Model):
         ordering = ['user', 'name']
         verbose_name = 'Territory'
         verbose_name_plural = 'Territories'
+        permissions = (
+            ("show_on_admin_dashboard", "Show on Admin Dashboard"),
+        )
 
     def __str__(self):
         return self.name
@@ -34,7 +37,7 @@ class TimeSlot(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='time_slots')
     date = models.DateField()
     hour = models.IntegerField(choices=HOUR_CHOICES)  # 24-hour format
-    is_weekly_default = models.BooleanField(default=False, null=False, blank=False)
+    is_weekly_default = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_time_slots')
     source = models.CharField(max_length=10, choices=[('user', 'User'), ('system', 'System')], default='user')
     territory = models.ForeignKey(Territory, on_delete=models.SET_NULL, null=True, related_name='time_slots')
@@ -60,6 +63,9 @@ class TimeSlot(models.Model):
         ordering = ['user', 'date', 'hour']
         verbose_name = 'TimeSlot'
         verbose_name_plural = 'TimeSlots'
+        permissions = (
+            ("show_on_admin_dashboard", "Show on Admin Dashboard"),
+        )
 
     @classmethod
     def create_default_weekly_slots(cls, user, start_date, end_date, hour):
