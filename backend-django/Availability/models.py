@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+import datetime
 
 from django.contrib.auth import get_user_model
 User = get_user_model()
@@ -30,6 +31,70 @@ class Territory(models.Model):
 
     def __str__(self):
         return self.name
+
+    
+class Date(models.Model):
+    HOUR_CHOICES = list(range(7, 22))
+    date = models.DateField()
+    status = models.CharField(max_length=255)
+    territory = models.ForeignKey(Territory, on_delete=models.SET_NULL, null=True, related_name='territories')
+
+    @property
+    def week_of_month(self):
+        first_day = self.date.replace(day=1)
+        first_sunday = first_day + datetime.timedelta(days=(6 - first_day.weekday())) if first_day.weekday() != 6 else first_day
+        return 1 if self.date < first_sunday else (self.date - first_sunday).days // 7 + 2
+
+    @property
+    def day_of_week(self):
+        return (self.date.weekday() + 1) % 7 + 1
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.create_slots()
+
+    def create_slots(self):
+        for hour in self.HOUR_CHOICES:
+            Slot.objects.get_or_create(date=self, start_time=datetime.time(hour=hour))
+
+    def __str__(self):
+        return f"Date: {self.date}, Week of Month: {self.week_of_month}, Day of Week: {self.day_of_week}"
+
+
+class Slot(models.Model):
+    STATUS_CHOICES = [
+        ('available', 'Available'),
+        ('unavailable', 'Unavailable')
+    ]
+    STATUS_DEFAULT = 'unavailable'
+    SOURCE_CHOICES = [
+        ('user', 'User'),
+        ('pending', 'Pending'),
+        ('recurring', 'Recurring'), 
+        ('settings', 'Settings')
+        ]
+    SOURCE_DEFAULT = 'user'
+    date = models.ForeignKey(Date, on_delete=models.CASCADE, related_name='slots')
+    status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_DEFAULT)
+    start_time = models.TimeField()
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default=SOURCE_DEFAULT)
+    invitees_allowed = models.IntegerField(default=1)
+
+    @property
+    def invitees_remaining(self):
+        remaining = self.invitees_allowed - self.appointments.count()
+        self.update_status_based_on_remaining(remaining)
+        return remaining
+    
+    def update_status_based_on_remaining(self, remaining):
+        if remaining == 0:
+            self.status = 'unavailable'
+            self.save(update_fields=['status'])
+
+    def __str__(self):
+        return f"Date: {self.date}, Hour: {self.start_time}"
+
+
 
 class TimeSlot(models.Model):
     HOUR_CHOICES = [(i, f'{i}:00') for i in range(7, 22)]

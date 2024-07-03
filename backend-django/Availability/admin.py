@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TimeSlot, Territory
+from .models import TimeSlot, Territory, Slot, Date
 from .forms import TimeSlotAddForm, TimeSlotChangeForm
 from django.contrib.auth import get_user_model
 from core.admin import CustomModelAdmin
@@ -8,6 +8,14 @@ from .forms import TerritoryForm
 from django.urls import resolve
 
 User = get_user_model()
+
+@admin.register(Slot)
+class SlotAdmin(CustomModelAdmin):
+    pass
+
+@admin.register(Date)
+class DateAdmin(CustomModelAdmin):
+    pass
 
 @admin.register(TimeSlot)
 class TimeSlotAdmin(CustomModelAdmin):

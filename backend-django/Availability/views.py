@@ -2,7 +2,7 @@
 
 from django.http import JsonResponse
 from django.views.generic import View
-from .models import TimeSlot, Territory
+from .models import TimeSlot, Territory, Slot, Date
 from datetime import datetime, timedelta
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
@@ -136,3 +136,59 @@ class ToggleTimeSlotByUser(View):
     # System Generated
     # User Generated, Previously Logged
     # User Updated, Current Session
+
+import calendar
+from datetime import datetime
+from django.http import JsonResponse
+from django.shortcuts import render
+
+# @method_decorator(login_required, name='dispatch')
+class generate_calendar(View):
+    def get(self, request, *args, **kwargs):
+        # Get the timestamp from the request (e.g., Date.now() = 1720043153382)
+        timestamp = int(request.GET.get('timestamp', 0)) / 1000
+        current_date = datetime.fromtimestamp(timestamp)
+        current_date = datetime(2024, 9, 3)
+
+        # Determine the month and year
+        year = current_date.year
+        month = current_date.month
+
+        # Create a calendar for the specified month and year
+        cal = calendar.Calendar(firstweekday=6)  # Start with Sunday
+        month_days = cal.monthdayscalendar(year, month)
+
+
+        month_days_w_mixins = []
+        for week_num in list(range(0, len(month_days))):
+            week = []
+            for day_num in list(range(0, len(month_days[week_num]))):
+                day = {}
+                if month_days[week_num][day_num] == 0:
+                    day['date'] = 0
+                    day['date_id'] = 0
+                    day['date_obj'] = 0
+                    day['slots'] = None
+                    week.append(day)
+                    continue
+                date = datetime(year=year, month=month, day=month_days[week_num][day_num])
+                _date, _date_is_new = Date.objects.get_or_create(date=date)
+                day['date'] = date
+                day['date_id'] = _date.pk
+                # day['date_obj'] = _date
+                # day['slots'] = _date.slots.all()
+                week.append(day)
+                
+            month_days_w_mixins.append(week)
+
+                                                
+
+
+        # Format the calendar data
+        days_of_week = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        calendar_data = {
+            'days_of_week': days_of_week,
+            'weeks': month_days_w_mixins
+        }
+
+        return JsonResponse(calendar_data)

@@ -1,5 +1,6 @@
 from django.db import models
 from Customers.models import Customer
+from Availability.models import Slot
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import Q
@@ -29,6 +30,7 @@ class Contract(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     users = models.ManyToManyField(User, limit_choices_to=limit_field_agent_choices, related_name='contracts')
+    slots = models.ManyToManyField(Slot, related_name='appointments')
 
     def __str__(self):
         return self.name
@@ -70,6 +72,7 @@ class Appointment(models.Model):
     )
     recording = models.TextField(default='', blank=True)
     contract = models.ForeignKey(Contract, on_delete=models.SET_NULL, null=True, blank=True)
+    slots = models.ManyToManyField(Slot, related_name='appointment_slots')
 
     class Meta:
         permissions = (
