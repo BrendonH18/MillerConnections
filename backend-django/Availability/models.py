@@ -32,12 +32,17 @@ class Territory(models.Model):
     def __str__(self):
         return self.name
 
-    
+# class Calendar(models.Model):
+
 class Date(models.Model):
     HOUR_CHOICES = list(range(7, 22))
     date = models.DateField()
     status = models.CharField(max_length=255)
     territory = models.ForeignKey(Territory, on_delete=models.SET_NULL, null=True, related_name='territories')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dates', default=1)
+    
+    class Meta:
+        unique_together = ('date', 'user')
 
     @property
     def week_of_month(self):
@@ -73,12 +78,14 @@ class Slot(models.Model):
         ('recurring', 'Recurring'), 
         ('settings', 'Settings')
         ]
-    SOURCE_DEFAULT = 'user'
+    SOURCE_DEFAULT = 'pending'
     date = models.ForeignKey(Date, on_delete=models.CASCADE, related_name='slots')
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_DEFAULT)
     start_time = models.TimeField()
     source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default=SOURCE_DEFAULT)
     invitees_allowed = models.IntegerField(default=1)
+    update_availability_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='availability_update_slots')
+    update_appointment_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='appointment_update_slots')
 
     @property
     def invitees_remaining(self):

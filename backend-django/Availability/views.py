@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.forms.models import model_to_dict
+from .serializers import DateSerializer, SlotsSerializer, TerritorySerializer
 
 User = get_user_model()
 
@@ -142,13 +143,32 @@ from datetime import datetime
 from django.http import JsonResponse
 from django.shortcuts import render
 
+def parse_date(date_str):
+    # Strip any leading or trailing whitespace
+    date_str = date_str.strip()
+
+    # Check if the string contains time information
+    if 'AM' in date_str or 'PM' in date_str:
+        # Parse the string with date and time
+        return datetime.strptime(date_str, '%m/%d/%Y %I:%M %p')
+    else:
+        # Parse the string with only the date
+        return datetime.strptime(date_str, '%m/%d/%Y')
+    
 # @method_decorator(login_required, name='dispatch')
 class generate_calendar(View):
     def get(self, request, *args, **kwargs):
+        required_fields = ['user_id', 'date']
+        missing_fields = [field for field in required_fields if not request.GET.get(field)]
+
+        if missing_fields:
+            return JsonResponse({'error': f'{", ".join(missing_fields)} parameter(s) missing'}, status=400)
         # Get the timestamp from the request (e.g., Date.now() = 1720043153382)
-        timestamp = int(request.GET.get('timestamp', 0)) / 1000
-        current_date = datetime.fromtimestamp(timestamp)
-        current_date = datetime(2024, 9, 3)
+        user_id = request.GET.get('user_id')
+        date_str = request.GET.get('date')
+        # timestamp = int(request.GET.get('timestamp', 0)) / 1000
+        current_date = parse_date(date_str)
+        # current_date = datetime(date_str)
 
         # Determine the month and year
         year = current_date.year
@@ -160,26 +180,27 @@ class generate_calendar(View):
 
 
         month_days_w_mixins = []
-        for week_num in list(range(0, len(month_days))):
-            week = []
-            for day_num in list(range(0, len(month_days[week_num]))):
-                day = {}
-                if month_days[week_num][day_num] == 0:
-                    day['date'] = 0
-                    day['date_id'] = 0
-                    day['date_obj'] = 0
-                    day['slots'] = None
+        try:
+
+            for week_num in list(range(0, len(month_days))):
+                week = []
+                for day_num in list(range(0, len(month_days[week_num]))):
+                    day = {}
+                    if month_days[week_num][day_num] == 0:
+                        day['date'] = 0
+                        day['date_obj'] = None
+                        week.append(day)
+                        continue
+                    date = datetime(year=year, month=month, day=month_days[week_num][day_num])
+                    _date, _date_is_new = Date.objects.get_or_create(date=date, user_id=int(user_id))
+                    day['date'] = date
+                    day['date_obj'] = DateSerializer(_date).data
+                    # day['slots'] = _date.slots.all()
                     week.append(day)
-                    continue
-                date = datetime(year=year, month=month, day=month_days[week_num][day_num])
-                _date, _date_is_new = Date.objects.get_or_create(date=date)
-                day['date'] = date
-                day['date_id'] = _date.pk
-                # day['date_obj'] = _date
-                # day['slots'] = _date.slots.all()
-                week.append(day)
-                
-            month_days_w_mixins.append(week)
+                    
+                month_days_w_mixins.append(week)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
 
                                                 
 
@@ -192,3 +213,108 @@ class generate_calendar(View):
         }
 
         return JsonResponse(calendar_data)
+    
+
+class generate_slots(View):
+    def get(self, request, *args, **kwargs):
+        required_fields = ['date_id']
+        missing_fields = [field for field in required_fields if not request.GET.get(field)]
+
+        if missing_fields:
+            return JsonResponse({'error': f'{", ".join(missing_fields)} parameter(s) missing'}, status=400)
+        # Get the timestamp from the request (e.g., Date.now() = 1720043153382)
+        date_id = request.GET.get('date_id')
+
+        date_obj = Date.objects.get(id=int(date_id))
+
+        slots = date_obj.slots.all().order_by('start_time')
+        serialized_slots = SlotsSerializer(slots, many=True).data
+        data = {
+            "slots": serialized_slots
+        }
+        return JsonResponse(data)
+    
+class update_slot(View):
+    def post(self, request, *args, **kwargs):
+        required_fields = ['slot_id']
+        missing_fields = [field for field in required_fields if not request.POST.get(field)]
+
+        if missing_fields:
+            return JsonResponse({'error': f'{", ".join(missing_fields)} parameter(s) missing'}, status=400)
+        # Get the timestamp from the request (e.g., Date.now() = 1720043153382)
+        slot_id = request.POST.get('slot_id')
+
+        try:
+            # Fetch the slot object
+            slot_obj = Slot.objects.get(id=int(slot_id))
+
+            # Toggle the status
+            if slot_obj.status == 'unavailable':
+                slot_obj.status = 'available'
+            else:
+                slot_obj.status = 'unavailable'
+
+            # Update the user who made the change
+            slot_obj.update_availability_user = request.user
+
+            # Save the changes to the database
+            slot_obj.save()
+
+            return JsonResponse({'message': 'Slot updated successfully', 'status': slot_obj.status}, status=200)
+
+        except Slot.DoesNotExist:
+            return JsonResponse({'error': 'Slot not found'}, status=404)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        
+class Territories(View):
+    def get(self, request, *args, **kwargs):
+        required_fields = ['slot_id']
+        missing_fields = [field for field in required_fields if not request.GET.get(field)]
+
+        if missing_fields:
+            return JsonResponse({'error': f'{", ".join(missing_fields)} parameter(s) missing'}, status=400)
+        # Get the timestamp from the request (e.g., Date.now() = 1720043153382)
+        slot_id = request.GET.get('slot_id')
+
+        try:
+            # Fetch the slot object
+            slot_obj = Slot.objects.get(id=int(slot_id))
+
+            user = slot_obj.date.user
+            active_territories = TerritorySerializer(Territory.objects.filter(user=user, is_active=True)).data
+
+            return JsonResponse({'message': 'Slot updated successfully', 'territories': active_territories}, status=200)
+
+        except Slot.DoesNotExist:
+            return JsonResponse({'error': 'Territory not found'}, status=404)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    def post(self, request, *args, **kwargs):
+        required_fields = ['slot_id', 'territory_id']
+        missing_fields = [field for field in required_fields if not request.POST.get(field)]
+
+        if missing_fields:
+            return JsonResponse({'error': f'{", ".join(missing_fields)} parameter(s) missing'}, status=400)
+        # Get the timestamp from the request (e.g., Date.now() = 1720043153382)
+        slot_id = request.POST.get('slot_id')
+        territory_id = request.POST.get('territory_id')
+
+        try:
+            # Fetch the slot object
+            slot_obj = Slot.objects.get(id=int(slot_id))
+            territory_obj = Territory.objects.get(id=int(territory_id))
+
+            slot_obj.territory = territory_obj
+            slot_obj.save()
+
+            return JsonResponse({'message': 'Slot updated successfully', 'territory': territory_id}, status=200)
+
+        except Slot.DoesNotExist:
+            return JsonResponse({'error': 'Territory not found'}, status=404)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)

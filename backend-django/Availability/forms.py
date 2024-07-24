@@ -23,12 +23,12 @@ class Select2Mixin:
 class TimeSlotAddForm(Select2Mixin, forms.ModelForm):
     class Meta:
         model = TimeSlot
-        fields = ['user', 'date']
-        widgets = {
-            'date': DatePickerInput(options={'inline': True, 'keepOpen': True}),
-        }
+        fields = ['user',]
+        # widgets = {
+        #     'date': DatePickerInput(options={'inline': True, 'keepOpen': True}),
+        # }
     class Media:
-        js = ('availability/update_hourly_availability_given_day_and_user.js',)
+        js = ('availability/update_hourly_availability_given_day_and_user_copy.js',)
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop('request', None)

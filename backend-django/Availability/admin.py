@@ -15,7 +15,9 @@ class SlotAdmin(CustomModelAdmin):
 
 @admin.register(Date)
 class DateAdmin(CustomModelAdmin):
-    pass
+    list_display = ('date', 'user', 'territory')
+    list_filter = ('date', 'user', 'territory')
+    search_fields = ('date', 'user', 'territory')
 
 @admin.register(TimeSlot)
 class TimeSlotAdmin(CustomModelAdmin):
