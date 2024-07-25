@@ -86,17 +86,18 @@ class Slot(models.Model):
     invitees_allowed = models.IntegerField(default=1)
     update_availability_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='availability_update_slots')
     update_appointment_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='appointment_update_slots')
+    phone_agent = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='slots')
 
-    @property
-    def invitees_remaining(self):
-        remaining = self.invitees_allowed - self.appointments.count()
-        self.update_status_based_on_remaining(remaining)
-        return remaining
+    # @property
+    # def invitees_remaining(self):
+    #     remaining = self.invitees_allowed - self.appointments.count()
+    #     self.update_status_based_on_remaining(remaining)
+    #     return remaining
     
-    def update_status_based_on_remaining(self, remaining):
-        if remaining == 0:
-            self.status = 'unavailable'
-            self.save(update_fields=['status'])
+    # def update_status_based_on_remaining(self, remaining):
+    #     if remaining == 0:
+    #         self.status = 'unavailable'
+    #         self.save(update_fields=['status'])
 
     def __str__(self):
         return f"Date: {self.date}, Hour: {self.start_time}"

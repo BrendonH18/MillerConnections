@@ -43,6 +43,8 @@ class AppointmentForm(forms.ModelForm):
             'contract'
             # 'customer',
         ]
+    class Media:
+        js = ('appointments/appointments_scheduling_calendar.js',)
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
@@ -51,94 +53,94 @@ class AppointmentForm(forms.ModelForm):
         customer = None
         appointment = None
         
-        if self.instance:
-            customer = getattr(self.instance, 'customer', None)
-            # appointment = self.instance
-            appointment = getattr(self, 'instance', None)
+        # if self.instance:
+        #     customer = getattr(self.instance, 'customer', None)
+        #     # appointment = self.instance
+        #     appointment = getattr(self, 'instance', None)
 
-        # if appointment:
-        #     if appointment.user_field_agent_id == True:
-        #         self.fields['contract'].queryset = Contract.objects.filter(
-        #             users=kwargs['instance'].user_field_agent,
-        #             start_date__lte=timezone.now(),
-        #             end_date__gte=timezone.now()
-        #         )
-        #     else:
-        #         self.fields['contract'].queryset = Contract.objects.none()
-        # else:
-        #     self.fields['contract'].queryset = Contract.objects.none()
+        # # if appointment:
+        # #     if appointment.user_field_agent_id == True:
+        # #         self.fields['contract'].queryset = Contract.objects.filter(
+        # #             users=kwargs['instance'].user_field_agent,
+        # #             start_date__lte=timezone.now(),
+        # #             end_date__gte=timezone.now()
+        # #         )
+        # #     else:
+        # #         self.fields['contract'].queryset = Contract.objects.none()
+        # # else:
+        # #     self.fields['contract'].queryset = Contract.objects.none()
 
-        lock_mapping = [
-            (customer, 'customer_name', 'name'),
-            (customer, 'customer_phone1', 'phone1'),
-            (customer, 'customer_phone2', 'phone2'),
-            (customer, 'customer_street', 'street'),
-            (customer, 'customer_state', 'state'),
-            (customer, 'customer_zip', 'zip'),
-            (appointment, 'recording', 'recording'),
-            (appointment, 'scheduled', 'scheduled'),
-            (appointment, 'complete', 'complete'),
-            (appointment, 'user_field_agent', 'user_field_agent'),
-            (appointment, 'user_phone_agent', 'user_phone_agent'),
-            (appointment, 'disposition', 'disposition'),
-            (appointment, 'contract', 'contract')
-        ]
+        # lock_mapping = [
+        #     (customer, 'customer_name', 'name'),
+        #     (customer, 'customer_phone1', 'phone1'),
+        #     (customer, 'customer_phone2', 'phone2'),
+        #     (customer, 'customer_street', 'street'),
+        #     (customer, 'customer_state', 'state'),
+        #     (customer, 'customer_zip', 'zip'),
+        #     (appointment, 'recording', 'recording'),
+        #     (appointment, 'scheduled', 'scheduled'),
+        #     (appointment, 'complete', 'complete'),
+        #     (appointment, 'user_field_agent', 'user_field_agent'),
+        #     (appointment, 'user_phone_agent', 'user_phone_agent'),
+        #     (appointment, 'disposition', 'disposition'),
+        #     (appointment, 'contract', 'contract')
+        # ]
 
-        external_manager_lock_mapping = [
-            (appointment, 'recording', 'recording'),
-            (appointment, 'user_phone_agent', 'user_phone_agent'),
-        ]
+        # external_manager_lock_mapping = [
+        #     (appointment, 'recording', 'recording'),
+        #     (appointment, 'user_phone_agent', 'user_phone_agent'),
+        # ]
 
-        phone_lock_mapping = [
-            (appointment, 'user_phone_agent', 'user_phone_agent'),
-        ]
+        # phone_lock_mapping = [
+        #     (appointment, 'user_phone_agent', 'user_phone_agent'),
+        # ]
 
-        field_lock_mapping = [
-            (customer, 'customer_name', 'name'),
-            (customer, 'customer_phone1', 'phone1'),
-            (customer, 'customer_phone2', 'phone2'),
-            (customer, 'customer_street', 'street'),
-            (customer, 'customer_state', 'state'),
-            (customer, 'customer_zip', 'zip'),
-            (appointment, 'recording', 'recording'),
-            (appointment, 'user_field_agent', 'user_field_agent'),
-            (appointment, 'user_phone_agent', 'user_phone_agent'),
-        ]
+        # field_lock_mapping = [
+        #     (customer, 'customer_name', 'name'),
+        #     (customer, 'customer_phone1', 'phone1'),
+        #     (customer, 'customer_phone2', 'phone2'),
+        #     (customer, 'customer_street', 'street'),
+        #     (customer, 'customer_state', 'state'),
+        #     (customer, 'customer_zip', 'zip'),
+        #     (appointment, 'recording', 'recording'),
+        #     (appointment, 'user_field_agent', 'user_field_agent'),
+        #     (appointment, 'user_phone_agent', 'user_phone_agent'),
+        # ]
 
-        # If an instance is provided (i.e., editing an existing appointment),
-        # populate the customer-related fields with the customer's data
+        # # If an instance is provided (i.e., editing an existing appointment),
+        # # populate the customer-related fields with the customer's data
 
-        def is_in_X_lock_mapping(field_name, attr_name, lock_mapping):
-            return any(field == field_name and attr == attr_name for _, field, attr in lock_mapping)
+        # def is_in_X_lock_mapping(field_name, attr_name, lock_mapping):
+        #     return any(field == field_name and attr == attr_name for _, field, attr in lock_mapping)
         
-        def lock_field(field_name):
-            attributes =['readonly', 'disabled']
-            for attr in attributes:
-                self.fields[field_name].widget.attrs[attr] = True
+        # def lock_field(field_name):
+        #     attributes =['readonly', 'disabled']
+        #     for attr in attributes:
+        #         self.fields[field_name].widget.attrs[attr] = True
 
-        if appointment and appointment.pk:
-            # Set Initial Value
-            # Make Every Value ReadOnly By Default
-            for obj, field_name, attr_name in lock_mapping:
-                self.fields[field_name].initial = getattr(obj, attr_name)
-                if self.request:
-                    if self.request.user.is_superuser:
-                        continue
-                    elif self.request.user.groups.filter(name="Internal Manager").exists():
-                        continue
-                    elif self.request.user.groups.filter(name="External Manager").exists():
-                        if is_in_X_lock_mapping(field_name, attr_name, external_manager_lock_mapping):
-                            lock_field(field_name)
-                    elif self.request.user.groups.filter(name="Phone").exists():
-                        if is_in_X_lock_mapping(field_name, attr_name, phone_lock_mapping):
-                            lock_field(field_name)
-                    elif self.request.user.groups.filter(name="Field").exists():
-                        if is_in_X_lock_mapping(field_name, attr_name, field_lock_mapping):
-                            lock_field(field_name)
-                    else:
-                        lock_field(field_name)    
-                else:
-                    lock_field(field_name)
+        # if appointment and appointment.pk:
+        #     # Set Initial Value
+        #     # Make Every Value ReadOnly By Default
+        #     for obj, field_name, attr_name in lock_mapping:
+        #         self.fields[field_name].initial = getattr(obj, attr_name)
+        #         if self.request:
+        #             if self.request.user.is_superuser:
+        #                 continue
+        #             elif self.request.user.groups.filter(name="Internal Manager").exists():
+        #                 continue
+        #             elif self.request.user.groups.filter(name="External Manager").exists():
+        #                 if is_in_X_lock_mapping(field_name, attr_name, external_manager_lock_mapping):
+        #                     lock_field(field_name)
+        #             elif self.request.user.groups.filter(name="Phone").exists():
+        #                 if is_in_X_lock_mapping(field_name, attr_name, phone_lock_mapping):
+        #                     lock_field(field_name)
+        #             elif self.request.user.groups.filter(name="Field").exists():
+        #                 if is_in_X_lock_mapping(field_name, attr_name, field_lock_mapping):
+        #                     lock_field(field_name)
+        #             else:
+        #                 lock_field(field_name)    
+        #         else:
+        #             lock_field(field_name)
 
     def save(self, commit=True, user=None):
         appointment = super().save(commit=False)

@@ -318,3 +318,65 @@ class Territories(View):
 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
+        
+class get_field_availability(View):
+    def get(self, request, *args, **kwargs):
+        required_fields = ['date_id']
+        missing_fields = [field for field in required_fields if not request.GET.get(field)]
+
+        if missing_fields:
+            return JsonResponse({'error': f'{", ".join(missing_fields)} parameter(s) missing'}, status=400)
+        # Get the timestamp from the request (e.g., Date.now() = 1720043153382)
+        date_id = request.GET.get('date_id')
+
+        date_obj = Date.objects.get(id=int(date_id))
+
+        slots = date_obj.slots.filter(status="available").order_by('start_time')
+        serialized_slots = SlotsSerializer(slots, many=True).data
+        data = {
+            "slots": serialized_slots
+        }
+        return JsonResponse(data)
+    
+class appointment_select_slot(View):
+    def post(self, request, *args, **kwargs):
+        required_fields = ['slot_id']
+        missing_fields = [field for field in required_fields if not request.POST.get(field)]
+
+        if missing_fields:
+            return JsonResponse({'error': f'{", ".join(missing_fields)} parameter(s) missing'}, status=400)
+        # Get the timestamp from the request (e.g., Date.now() = 1720043153382)
+        slot_id = request.POST.get('slot_id')
+        phone_agent = request.POST.get('phone_agent')
+        update_appointment_user = request.user
+
+
+        try:
+            # Fetch the slot object
+            slot_obj = Slot.objects.get(id=int(slot_id))
+
+            # Toggle the invitees_allowed
+            if slot_obj.invitees_allowed == 1:
+                if not phone_agent:
+                    return JsonResponse({'error': 'No Phone Agent'}, status=404)
+                slot_obj.invitees_allowed = 0
+                # Update the associated phone user
+                slot_obj.phone_agent = User.objects.get(id=int(phone_agent))
+            else:
+                slot_obj.invitees_allowed = 1
+                # Update the associated phone user
+                slot_obj.phone_agent = None
+
+            # Update the user who made the change
+            slot_obj.update_appointment_user = update_appointment_user
+
+            # Save the changes to the database
+            slot_obj.save()
+            serialized_slot = SlotsSerializer(slot_obj).data
+            # return JsonResponse({'message': 'Slot updated successfully', 'status': slot_obj.status}, status=200)
+            return JsonResponse({'message': 'Slot updated successfully', 'data': serialized_slot}, status=200)
+        except Slot.DoesNotExist:
+            return JsonResponse({'error': 'Slot not found'}, status=404)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)

@@ -28,7 +28,7 @@ class TimeSlotAddForm(Select2Mixin, forms.ModelForm):
         #     'date': DatePickerInput(options={'inline': True, 'keepOpen': True}),
         # }
     class Media:
-        js = ('availability/update_hourly_availability_given_day_and_user_classes.js',)
+        js = ('availability/availability_scheduling_calendar.js',)
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop('request', None)

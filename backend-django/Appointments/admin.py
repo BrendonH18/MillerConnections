@@ -103,8 +103,8 @@ class AppointmentAdmin(CustomModelAdmin):
 
     inlines = [NoteInline]
 
-    class Media:
-        js = ('appointments/update_contract_given_field_agent.js',)
+    # class Media:
+    #     js = ('appointments/update_contract_given_field_agent.js',)
 
     
     def get_queryset(self, request):
